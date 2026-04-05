@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio of Beauty</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="menu-overlay" id="menuOverlay">
+  <button class="menu-close" onclick="closeMenu()">Fermer ✕</button>
+  <nav class="menu-links">
+    <a href="index.html">Accueil</a>
+    <a href="shop.html">Boutique</a>
+    <a href="shop.html">L'essentiel Brow</a>
+    <a href="shop.html">L'essentiel Lash</a>
+    <a href="reviews.html">Avis</a>
+    <a href="signup.html">Créer un compte</a>
+    <a href="login.html">Connexion</a>
+    <a href="index.html">Contact</a>
+  </nav>
+</div>
+
+<div class="faq-panel" id="faqPanel">
+  <div class="faq-inner">
+    <div class="faq-header">
+      <div class="faq-title">FAQ</div>
+      <button class="faq-close" type="button" onclick="closeFaq()">×</button>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-number">01</div>
+        <div class="faq-question">Qu'est-ce qu'un carnet digital ?</div>
+        <div class="faq-answer">Un fichier numérique interactif que vous téléchargez après l'achat et utilisez sur votre tablette, téléphone ou ordinateur.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-number">02</div>
+        <div class="faq-question">Sur quelle application l'utiliser ?</div>
+        <div class="faq-answer">GoodNotes, Notability, ou tout lecteur PDF.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-number">03</div>
+        <div class="faq-question">Comment je reçois mon carnet ?</div>
+        <div class="faq-answer">Par e-mail, immédiatement après l'achat.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-number">04</div>
+        <div class="faq-question">Puis-je me faire rembourser ?</div>
+        <div class="faq-answer">Les produits digitaux étant livrés instantanément, les remboursements ne sont pas possibles.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-number">05</div>
+        <div class="faq-question">Une question ? Un problème ?</div>
+        <div class="faq-answer">Contactez-nous via la page Contact.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="header-left">
+    <div class="hamburger" onclick="openMenu()">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+  <div class="header-center"><a href="index.html">Studio of Beauty</a></div>
+  <div class="header-right">
+    <div class="header-icon" id="accountIcon" onclick="goToAccount()" title="Compte">
+      <svg id="accountSvg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg>
+      <span class="avatar-badge" id="avatarBadge">A B</span>
+    </div>
+    <div class="header-icon" style="position:relative;">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="cart-badge">0</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="hero-placeholder"><div class="hero-figure-inner"></div></div>
+    <div class="hero-label">
+      <h1 class="hero-title">Studio of Beauty</h1>
+      <p class="hero-sub">Carnets digitaux · Beauté & Précision</p>
+    </div>
+  </section>
+
+  <section class="products-section">
+    <p class="section-label">Nos créations</p>
+    <div class="products-grid">
+      <a href="product-brow-beige.html" class="product-card card-brow-beige">
+        <div class="product-img-wrap">
+          <span class="product-badge badge-brow">Brow</span>
+          <span class="color-dot dot-beige"></span>
+          <div class="product-img-main">
+            <div class="prod-book-wrap">
+              <div class="prod-book book-brow-beige">
+                <div class="prod-book-spine"></div>
+                <div class="prod-book-text">L'Essentiel<br>Brow</div>
+                <div class="prod-book-line"></div>
+              </div>
+            </div>
+          </div>
+          <div class="product-img-hover"><img class="product-photo" src="images/placeholder.svg" alt="L'Essentiel Brow beige"></div>
+        </div>
+        <div class="product-info"><div class="product-name">L'Essentiel Brow<span>Version Beige</span></div><div class="product-price">8,95 €</div></div>
+      </a>
+
+      <a href="product-brow-gray.html" class="product-card card-brow-gray">
+        <div class="product-img-wrap">
+          <span class="product-badge badge-brow">Brow</span>
+          <span class="color-dot dot-gray"></span>
+          <div class="product-img-main">
+            <div class="prod-book-wrap">
+              <div class="prod-book book-brow-gray">
+                <div class="prod-book-spine"></div>
+                <div class="prod-book-text">L'Essentiel<br>Brow</div>
+                <div class="prod-book-line"></div>
+              </div>
+            </div>
+          </div>
+          <div class="product-img-hover"><img class="product-photo" src="images/placeholder.svg" alt="L'Essentiel Brow gris"></div>
+        </div>
+        <div class="product-info"><div class="product-name">L'Essentiel Brow<span>Version Gris</span></div><div class="product-price">8,95 €</div></div>
+      </a>
+
+      <a href="product-lash-beige.html" class="product-card card-lash-beige">
+        <div class="product-img-wrap">
+          <span class="product-badge badge-lash">Lash</span>
+          <span class="color-dot dot-beige"></span>
+          <div class="product-img-main">
+            <div class="prod-book-wrap">
+              <div class="prod-book book-lash-beige">
+                <div class="prod-book-spine"></div>
+                <div class="prod-book-text">L'Essentiel<br>Lash</div>
+                <div class="prod-book-line"></div>
+              </div>
+            </div>
+          </div>
+          <div class="product-img-hover"><img class="product-photo" src="images/placeholder.svg" alt="L'Essentiel Lash beige"></div>
+        </div>
+        <div class="product-info"><div class="product-name">L'Essentiel Lash<span>Version Beige</span></div><div class="product-price">8,95 €</div></div>
+      </a>
+
+      <a href="product-lash-gray.html" class="product-card card-lash-gray">
+        <div class="product-img-wrap">
+          <span class="product-badge badge-lash">Lash</span>
+          <span class="color-dot dot-gray"></span>
+          <div class="product-img-main">
+            <div class="prod-book-wrap">
+              <div class="prod-book book-lash-gray">
+                <div class="prod-book-spine"></div>
+                <div class="prod-book-text">L'Essentiel<br>Lash</div>
+                <div class="prod-book-line"></div>
+              </div>
+            </div>
+          </div>
+          <div class="product-img-hover"><img class="product-photo" src="images/placeholder.svg" alt="L'Essentiel Lash gris"></div>
+        </div>
+        <div class="product-info"><div class="product-name">L'Essentiel Lash<span>Version Gris</span></div><div class="product-price">8,95 €</div></div>
+      </a>
+    </div>
+  </section>
+
+  <section class="desc-section">
+    <div class="desc-block">
+      <p class="desc-eyebrow">La méthode Studio of Beauty</p>
+      <h2 class="desc-title">Des carnets pensés pour sublimer votre regard, au quotidien.</h2>
+      <p class="desc-body">L'Essentiel Brow et L'Essentiel Lash sont des carnets digitaux conçus pour accompagner les professionnelles et les passionnées de beauté dans leur routine regard. Chaque carnet centralise tout ce dont vous avez besoin : techniques, suivis, inspirations et conseils personnalisés.</p>
+      <ul class="desc-list">
+        <li>Organisez vos soins sourcils et cils en un seul endroit</li>
+        <li>Suivez vos progrès et vos techniques pas à pas</li>
+        <li>Accédez à des contenus exclusifs et des méthodes éprouvées</li>
+        <li>Compatible avec toutes les applications de lecture PDF & digitale</li>
+        <li>Disponible en version Beige ou Gris pour s'adapter à votre style</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="home-reviews-section">
+    <p class="home-reviews-label">Les derniers avis</p>
+    <div class="home-reviews-slider" id="homeReviewsSlider">
+      <div class="home-review-empty" id="homeReviewsEmpty">Aucun avis pour le moment. Les 3 derniers avis apparaîtront ici automatiquement.</div>
+    </div>
+  </section>
+
+  <section class="newsletter-section">
+    <p class="newsletter-brand">Studio of Beauty</p>
+    <h2 class="newsletter-title">Rejoignez la communauté</h2>
+    <p class="newsletter-sub">Nouveautés, conseils exclusifs & offres réservées aux abonnés</p>
+    <form class="newsletter-form" id="newsletterForm">
+      <input class="newsletter-input" id="newsletterEmail" type="email" placeholder="Votre adresse e-mail" required>
+      <button class="newsletter-btn" type="submit">S'inscrire</button>
+    </form>
+    <div class="social-row">
+      <a class="social-link" href="https://www.tiktok.com/@studioofbeauty_" target="_blank" rel="noopener noreferrer">TikTok</a>
+      <a class="social-link" href="https://www.instagram.com/studioofbeauty___" target="_blank" rel="noopener noreferrer">Instagram</a>
+      <a class="social-link" href="https://linktr.ee/Studioofbeautyy" target="_blank" rel="noopener noreferrer">Linktree</a>
+    </div>
+  </section>
+
+  <footer>
+    <button type="button" onclick="toggleFaq()">FAQ</button>
+    <button id="contactBtn" type="button" onclick="toggleContactBubble()">Contact</button>
+    <a href="legal.html">Mentions légales</a>
+    <div class="contact-popover" id="contactPopover">studioofbeauty@gmail.com</div>
+  </footer>
+</main>
+
+<script src="js/app.js"></script>
+</body>
+</html>

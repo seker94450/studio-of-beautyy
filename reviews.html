@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Avis clients — Studio of Beauty</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="menu-overlay" id="menuOverlay">
+  <button class="menu-close" onclick="closeMenu()">Fermer ✕</button>
+  <nav class="menu-links">
+    <a href="index.html">Accueil</a>
+    <a href="shop.html">Boutique</a>
+    <a href="shop.html">L'essentiel Brow</a>
+    <a href="shop.html">L'essentiel Lash</a>
+    <a href="reviews.html">Avis</a>
+    <a href="signup.html">Créer un compte</a>
+    <a href="login.html">Connexion</a>
+    <a href="index.html">Contact</a>
+  </nav>
+</div>
+
+<div class="review-modal" id="reviewModal">
+  <div class="review-modal-card">
+    <button class="review-modal-close" type="button" onclick="closeReviewModal()">×</button>
+    <h2 class="review-modal-title">Donner son avis</h2>
+    <p class="review-modal-sub">Partagez votre expérience. Votre avis apparaîtra sur la page Avis ainsi que parmi les 3 derniers avis affichés sur l'accueil.</p>
+    <form class="review-form" id="reviewForm">
+      <input id="reviewName" type="text" placeholder="Votre prénom ou nom" required>
+      <select id="reviewRating" required>
+        <option value="">Note</option>
+        <option value="5">★★★★★</option>
+        <option value="4">★★★★☆</option>
+        <option value="3">★★★☆☆</option>
+        <option value="2">★★☆☆☆</option>
+        <option value="1">★☆☆☆☆</option>
+      </select>
+      <textarea id="reviewText" placeholder="Votre avis" required></textarea>
+      <button class="auth-btn" type="submit">Publier l'avis</button>
+      <div class="auth-message" id="reviewMessage"></div>
+    </form>
+  </div>
+</div>
+
+<header>
+  <div class="header-left">
+    <div class="hamburger" onclick="openMenu()">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+  <div class="header-center"><a href="index.html">Studio of Beauty</a></div>
+  <div class="header-right">
+    <div class="header-icon" id="accountIcon" onclick="goToAccount()" title="Compte">
+      <svg id="accountSvg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg>
+      <span class="avatar-badge" id="avatarBadge">A B</span>
+    </div>
+    <div class="header-icon" style="position:relative;">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="cart-badge">0</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="reviews-page">
+    <div class="reviews-wrap">
+      <div class="reviews-eyebrow">Ils donnent leur avis</div>
+      <h1 class="reviews-title">Avis clients</h1>
+      <p class="reviews-intro">Retrouvez ici tous les avis laissés sur Studio of Beauty. Chaque nouveau commentaire apparaît automatiquement sur cette page et les 3 derniers s'affichent également sur la page d'accueil.</p>
+      <div class="reviews-topbar">
+        <button class="reviews-btn" type="button" onclick="openReviewModal()">Donner son avis</button>
+      </div>
+      <div id="reviewsList"></div>
+      <a class="back-link" href="index.html">Retour à l'accueil</a>
+    </div>
+  </div>
+</main>
+
+<script src="js/app.js"></script>
+</body>
+</html>
