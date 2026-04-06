@@ -175,6 +175,17 @@ app.get('/admin/users', requireAdmin, (req, res) => {
 app.use(express.static(path.join(__dirname)));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
+// Handle 404 for API routes
+app.use('/api', (req, res) => {
+  res.status(404).json({ error: 'Endpoint non trouvé' });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ error: 'Erreur serveur' });
+});
+
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur http://localhost:${PORT}`);
   console.log(`Admin users: http://localhost:${PORT}/admin/users?token=${ADMIN_TOKEN}`);
