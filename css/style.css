@@ -136,7 +136,7 @@ main { padding-top: var(--header-h); }
 .hero-title {
   font-family: 'Cormorant Garamond', serif; font-weight: 300;
   font-size: clamp(2.8rem, 6vw, 5.5rem);
-  letter-spacing: 0.12em; color: var(--white);
+  letter-spacing: 0.12em; color: #D2B48C;
   text-shadow: 0 2px 40px rgba(0,0,0,0.15);
   line-height: 1; text-transform: uppercase;
 }
