@@ -49,6 +49,7 @@ const STORAGE_USERS = 'sob_users';
 const STORAGE_SESSION = 'sob_current_user';
 const STORAGE_REVIEWS = 'sob_reviews';
 const STORAGE_CART = 'sob_cart';
+const API_URL = '';
 
 let productSliderIntervals = {};
 let homeReviewsInterval = null;
@@ -67,6 +68,21 @@ function updateCartBadge() {
   if (!badge) return;
   const count = getCart().reduce((sum, item) => sum + item.quantity, 0);
   badge.textContent = count;
+}
+
+async function apiPost(path, body) {
+  const response = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Erreur réseau');
+  }
+  return data;
 }
 
 function isLoggedIn() {
@@ -517,7 +533,7 @@ if (newsletterForm) {
 
 const signupForm = document.getElementById('signupForm');
 if (signupForm) {
-  signupForm.addEventListener('submit', function(e) {
+  signupForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     const firstName = document.getElementById('signupFirstName').value.trim();
     const lastName = document.getElementById('signupLastName').value.trim();
@@ -531,40 +547,40 @@ if (signupForm) {
       showMessage('signupMessage', 'Le mot de passe doit contenir au moins 6 caractères.', 'error');
       return;
     }
-    const users = getUsers();
-    const existing = users.find(user => user.email === email);
-    if (existing) {
-      showMessage('signupMessage', 'Un compte existe déjà avec cette adresse e-mail.', 'error');
-      return;
+
+    try {
+      const data = await apiPost('/api/signup', { firstName, lastName, email, password });
+      saveCurrentUser(data.user);
+      updateHeaderAccount();
+      showMessage('signupMessage', 'Compte créé avec succès.', 'success');
+      this.reset();
+      setTimeout(() => { location.href = 'index.html'; }, 900);
+    } catch (error) {
+      showMessage('signupMessage', error.message, 'error');
     }
-    const newUser = { firstName, lastName, email, password };
-    users.push(newUser);
-    saveUsers(users);
-    saveCurrentUser(newUser);
-    updateHeaderAccount();
-    showMessage('signupMessage', 'Compte créé avec succès.', 'success');
-    this.reset();
-    setTimeout(() => { location.href = 'index.html'; }, 900);
   });
 }
 
 const loginForm = document.getElementById('loginForm');
 if (loginForm) {
-  loginForm.addEventListener('submit', function(e) {
+  loginForm.addEventListener('submit', async function(e) {
     e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim().toLowerCase();
     const password = document.getElementById('loginPassword').value;
-    const users = getUsers();
-    const user = users.find(item => item.email === email && item.password === password);
-    if (!user) {
-      showMessage('loginMessage', 'E-mail ou mot de passe incorrect.', 'error');
+    if (!email || !password) {
+      showMessage('loginMessage', 'Merci de remplir tous les champs.', 'error');
       return;
     }
-    saveCurrentUser(user);
-    updateHeaderAccount();
-    showMessage('loginMessage', `Bienvenue ${user.firstName}.`, 'success');
-    this.reset();
-    setTimeout(() => { location.href = 'account.html'; }, 600);
+    try {
+      const data = await apiPost('/api/login', { email, password });
+      saveCurrentUser(data.user);
+      updateHeaderAccount();
+      showMessage('loginMessage', `Bienvenue ${data.user.firstName}.`, 'success');
+      this.reset();
+      setTimeout(() => { location.href = 'account.html'; }, 600);
+    } catch (error) {
+      showMessage('loginMessage', error.message, 'error');
+    }
   });
 }
 
