@@ -122,11 +122,6 @@ main { padding-top: var(--header-h); }
   display: flex; align-items: flex-end; justify-content: center;
   padding-bottom: 8rem;
 }
-.hero-figure-inner {
-  width: 300px; height: 460px;
-  background: linear-gradient(180deg, #c8bfb2 0%, #b0a898 100%);
-  border-radius: 50% 50% 0 0; opacity: 0.4;
-}
 .hero-label {
   position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
   text-align: center;
