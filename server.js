@@ -3,10 +3,15 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 const { Pool } = require('pg');
+const Stripe = require('stripe');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'studioofbeauty_admin';
+const stripe = process.env.STRIPE_SECRET_KEY ? Stripe(process.env.STRIPE_SECRET_KEY) : null;
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || null;
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || null;
+const SITE_URL = process.env.SITE_URL || 'http://localhost:3000';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -173,6 +178,80 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send('Erreur serveur.');
+  }
+});
+
+// ── STRIPE CHECKOUT ──────────────────────────────────────────────────────────
+app.post('/api/checkout/stripe', async (req, res) => {
+  if (!stripe) return res.status(503).json({ error: 'Stripe non configuré.' });
+  const { items } = req.body;
+  if (!items || !items.length) return res.status(400).json({ error: 'Panier vide.' });
+
+  const line_items = items.map(item => ({
+    price_data: {
+      currency: 'eur',
+      product_data: { name: item.title },
+      unit_amount: Math.round(parseFloat(item.price.replace(',', '.').replace(/[^0-9.]/g, '')) * 100)
+    },
+    quantity: item.quantity
+  }));
+
+  try {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items,
+      mode: 'payment',
+      success_url: `${SITE_URL}/cart.html?payment=success`,
+      cancel_url: `${SITE_URL}/cart.html?payment=cancel`
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur Stripe.' });
+  }
+});
+
+// ── PAYPAL CHECKOUT ───────────────────────────────────────────────────────────
+async function getPaypalToken() {
+  const creds = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
+  const resp = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+    method: 'POST',
+    headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'grant_type=client_credentials'
+  });
+  const data = await resp.json();
+  return data.access_token;
+}
+
+app.post('/api/checkout/paypal', async (req, res) => {
+  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) return res.status(503).json({ error: 'PayPal non configuré.' });
+  const { items } = req.body;
+  if (!items || !items.length) return res.status(400).json({ error: 'Panier vide.' });
+
+  const total = items.reduce((sum, item) => {
+    return sum + parseFloat(item.price.replace(',', '.').replace(/[^0-9.]/g, '')) * item.quantity;
+  }, 0).toFixed(2);
+
+  try {
+    const token = await getPaypalToken();
+    const resp = await fetch('https://api-m.paypal.com/v2/checkout/orders', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        intent: 'CAPTURE',
+        purchase_units: [{ amount: { currency_code: 'EUR', value: total } }],
+        application_context: {
+          return_url: `${SITE_URL}/cart.html?payment=success`,
+          cancel_url: `${SITE_URL}/cart.html?payment=cancel`
+        }
+      })
+    });
+    const order = await resp.json();
+    const approveLink = order.links.find(l => l.rel === 'approve');
+    res.json({ url: approveLink.href });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur PayPal.' });
   }
 });
 

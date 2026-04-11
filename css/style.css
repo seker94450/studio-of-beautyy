@@ -173,6 +173,17 @@ main { padding-top: var(--header-h); }
   color: var(--text-dark);
   border: 1px solid rgba(42,40,38,0.12);
 }
+.btn-paypal {
+  background: #ffc439;
+  color: #003087;
+  font-weight: 500;
+}
+.cart-checkout-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
 .cart-page {
   padding: 4rem 2rem 6rem;
   max-width: 1080px;
@@ -474,6 +485,23 @@ footer a, footer button {
   font-family: 'Jost', sans-serif; font-weight: 200; font-size: 1rem; letter-spacing: 0.3em; text-transform: uppercase; color: rgba(255,255,255,0.25); text-decoration: none; transition: color 0.3s; background: none; border: none; cursor: pointer;
 }
 footer a:hover, footer button:hover { color: rgba(255,255,255,0.6); }
+
+.payment-badges {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+  padding-top: 1rem;
+  border-top: 0.5px solid rgba(255,255,255,0.06);
+  margin-top: 0.5rem;
+}
+.payment-badge {
+  height: 22px;
+  width: auto;
+  opacity: 0.5;
+  border-radius: 3px;
+}
 
 .contact-popover {
   position: absolute;

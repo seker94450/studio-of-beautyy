@@ -169,12 +169,49 @@ function buildCartPage() {
         <div>Total</div>
         <div>${total.toFixed(2).replace('.', ',')} €</div>
       </div>
+      <div class="cart-checkout-buttons">
+        <button class="btn btn-primary" type="button" onclick="checkoutStripe()">Payer par CB / Visa</button>
+        <button class="btn btn-paypal" type="button" onclick="checkoutPaypal()">Payer avec PayPal</button>
+      </div>
       <a href="index.html" class="back-to-home">Retour à l'accueil</a>
     </div>
   `;
   page.querySelectorAll('.cart-item-remove').forEach(btn => {
     btn.addEventListener('click', () => removeFromCart(btn.dataset.slug));
   });
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment') === 'success') {
+    localStorage.removeItem(STORAGE_CART);
+    page.innerHTML = '<div class="cart-empty">Merci pour votre achat ! Vous recevrez votre carnet par e-mail.</div><a href="index.html" class="back-to-home">Retour à l\'accueil</a>';
+  } else if (params.get('payment') === 'cancel') {
+    const msg = document.createElement('div');
+    msg.className = 'auth-message error';
+    msg.textContent = 'Paiement annulé.';
+    page.prepend(msg);
+  }
+}
+
+async function checkoutStripe() {
+  const cart = getCart();
+  if (!cart.length) return;
+  try {
+    const data = await apiPost('/api/checkout/stripe', { items: cart });
+    window.location.href = data.url;
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+async function checkoutPaypal() {
+  const cart = getCart();
+  if (!cart.length) return;
+  try {
+    const data = await apiPost('/api/checkout/paypal', { items: cart });
+    window.location.href = data.url;
+  } catch (err) {
+    alert(err.message);
+  }
 }
 
 function formatReviewDate(dateString) {
