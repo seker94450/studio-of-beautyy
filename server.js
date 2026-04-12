@@ -122,11 +122,11 @@ async function sendOrderEmail(toEmail, items) {
       </table>
       <p style="margin:28px 0 0;font-size:13px;color:#999;">
         Une question ? Écrivez-nous à
-        <a href="mailto:studioofbeautyyy@gmail.com" style="color:#2a2826;">studioofbeautyyy@gmail.com</a>
+        <a href="mailto:studioofbeautyy@gmail.com" style="color:#2a2826;">studioofbeautyy@gmail.com</a>
       </p>
     </div>
     <div style="background:#f5f0ea;padding:20px;text-align:center;font-size:11px;color:#aaa;letter-spacing:0.1em;">
-      STUDIO OF BEAUTY &middot; studioofbeautyyy@gmail.com
+      STUDIO OF BEAUTY &middot; studioofbeautyy@gmail.com
     </div>
   </div>
 </body>
@@ -134,7 +134,7 @@ async function sendOrderEmail(toEmail, items) {
 
   try {
     await sgMail.send({
-      from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyyy@gmail.com' },
+      from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyy@gmail.com' },
       to: toEmail,
       subject: 'Votre commande Studio of Beauty — Carnet digital',
       html,
@@ -273,7 +273,7 @@ app.get('/api/test-email', async (req, res) => {
   try {
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
     await sgMail.send({
-      from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyyy@gmail.com' },
+      from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyy@gmail.com' },
       to,
       subject: 'Test email Studio of Beauty',
       text: 'Si vous recevez cet email, la configuration fonctionne !'
