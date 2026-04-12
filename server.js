@@ -302,23 +302,26 @@ app.post('/api/checkout/stripe', async (req, res) => {
   }
 });
 
-// Stripe success : vérifie le paiement, envoie l'email, redirige
+// Stripe success : redirige immédiatement, envoie l'email en arrière-plan
 app.get('/api/checkout/stripe/success', async (req, res) => {
   const { session_id } = req.query;
-  if (!session_id || !stripe) return res.redirect('/cart.html?payment=success');
-
-  try {
-    const session = await stripe.checkout.sessions.retrieve(session_id);
-    if (session.payment_status === 'paid') {
-      const userEmail = session.metadata?.userEmail || session.customer_email;
-      const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
-      if (userEmail) await sendOrderEmail(userEmail, items);
-    }
-  } catch (err) {
-    console.error('[Stripe success] Erreur :', err.message);
-  }
-
   res.redirect('/cart.html?payment=success');
+
+  if (!session_id || !stripe) return;
+
+  // Email envoyé en arrière-plan (non bloquant)
+  (async () => {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(session_id);
+      if (session.payment_status === 'paid') {
+        const userEmail = session.metadata?.userEmail || session.customer_email;
+        const items = session.metadata?.items ? JSON.parse(session.metadata.items) : [];
+        if (userEmail) await sendOrderEmail(userEmail, items);
+      }
+    } catch (err) {
+      console.error('[Stripe success] Erreur :', err.message);
+    }
+  })();
 });
 
 // ── PAYPAL ────────────────────────────────────────────────────────────────────
