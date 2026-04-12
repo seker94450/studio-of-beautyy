@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const { Pool } = require('pg');
 const Stripe = require('stripe');
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -66,21 +66,12 @@ app.use(cors());
 app.use(express.json());
 
 // ── EMAIL ─────────────────────────────────────────────────────────────────────
-function getMailTransporter() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD
-    }
-  });
-}
-
 async function sendOrderEmail(toEmail, items) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    console.warn('[Email] Non configuré — GMAIL_USER ou GMAIL_APP_PASSWORD manquant.');
+  if (!process.env.SENDGRID_API_KEY) {
+    console.warn('[Email] Non configuré — SENDGRID_API_KEY manquant.');
     return;
   }
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
   const attachments = [];
 
@@ -142,16 +133,21 @@ async function sendOrderEmail(toEmail, items) {
 </html>`;
 
   try {
-    await getMailTransporter().sendMail({
-      from: `"Studio of Beauty" <${process.env.GMAIL_USER}>`,
+    await sgMail.send({
+      from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyyy@gmail.com' },
       to: toEmail,
       subject: 'Votre commande Studio of Beauty — Carnet digital',
       html,
-      attachments
+      attachments: attachments.map(a => ({
+        content: fs.readFileSync(a.path).toString('base64'),
+        filename: a.filename,
+        type: 'application/pdf',
+        disposition: 'attachment'
+      }))
     });
     console.log('[Email] Envoyé à', toEmail);
   } catch (err) {
-    console.error('[Email] Erreur envoi :', err.message);
+    console.error('[Email] Erreur envoi :', err.message, err.response?.body);
   }
 }
 
@@ -271,25 +267,21 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
 app.get('/api/test-email', async (req, res) => {
   const to = req.query.to;
   if (!to) return res.status(400).json({ error: 'Paramètre ?to=email manquant' });
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
-    return res.status(503).json({ error: 'GMAIL_USER ou GMAIL_APP_PASSWORD non configuré', gmail_user: process.env.GMAIL_USER || 'manquant' });
+  if (!process.env.SENDGRID_API_KEY) {
+    return res.status(503).json({ error: 'SENDGRID_API_KEY non configuré' });
   }
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD }
-    });
-    await transporter.verify();
-    await transporter.sendMail({
-      from: `"Studio of Beauty" <${process.env.GMAIL_USER}>`,
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    await sgMail.send({
+      from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyyy@gmail.com' },
       to,
       subject: 'Test email Studio of Beauty',
       text: 'Si vous recevez cet email, la configuration fonctionne !'
     });
     res.json({ success: true, message: `Email envoyé à ${to}` });
   } catch (err) {
-    console.error('[Test email] Erreur :', err);
-    res.status(500).json({ error: err.message });
+    console.error('[Test email] Erreur :', err.response?.body || err.message);
+    res.status(500).json({ error: err.message, details: err.response?.body?.errors });
   }
 });
 
