@@ -208,8 +208,9 @@ function buildCartPage() {
 async function checkoutStripe() {
   const cart = getCart();
   if (!cart.length) return;
+  const user = getCurrentUser();
   try {
-    const data = await apiPost('/api/checkout/stripe', { items: cart });
+    const data = await apiPost('/api/checkout/stripe', { items: cart, userEmail: user?.email || '' });
     window.location.href = data.url;
   } catch (err) {
     alert(err.message);
@@ -219,8 +220,9 @@ async function checkoutStripe() {
 async function checkoutPaypal() {
   const cart = getCart();
   if (!cart.length) return;
+  const user = getCurrentUser();
   try {
-    const data = await apiPost('/api/checkout/paypal', { items: cart });
+    const data = await apiPost('/api/checkout/paypal', { items: cart, userEmail: user?.email || '' });
     window.location.href = data.url;
   } catch (err) {
     alert(err.message);
