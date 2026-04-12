@@ -267,6 +267,32 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
   }
 });
 
+// ── TEST EMAIL ────────────────────────────────────────────────────────────────
+app.get('/api/test-email', async (req, res) => {
+  const to = req.query.to;
+  if (!to) return res.status(400).json({ error: 'Paramètre ?to=email manquant' });
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    return res.status(503).json({ error: 'GMAIL_USER ou GMAIL_APP_PASSWORD non configuré', gmail_user: process.env.GMAIL_USER || 'manquant' });
+  }
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD }
+    });
+    await transporter.verify();
+    await transporter.sendMail({
+      from: `"Studio of Beauty" <${process.env.GMAIL_USER}>`,
+      to,
+      subject: 'Test email Studio of Beauty',
+      text: 'Si vous recevez cet email, la configuration fonctionne !'
+    });
+    res.json({ success: true, message: `Email envoyé à ${to}` });
+  } catch (err) {
+    console.error('[Test email] Erreur :', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── STRIPE ────────────────────────────────────────────────────────────────────
 app.post('/api/checkout/stripe', async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'Stripe non configuré.' });
