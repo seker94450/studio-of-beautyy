@@ -131,11 +131,11 @@ async function sendOrderEmail(toEmail, items) {
       </table>
       <p style="margin:28px 0 0;font-size:13px;color:#999;">
         Une question ? Écrivez-nous à
-        <a href="mailto:studioofbeautyy@gmail.com" style="color:#2a2826;">studioofbeautyy@gmail.com</a>
+        <a href="mailto:studioofbeautyyy@gmail.com" style="color:#2a2826;">studioofbeautyyy@gmail.com</a>
       </p>
     </div>
     <div style="background:#f5f0ea;padding:20px;text-align:center;font-size:11px;color:#aaa;letter-spacing:0.1em;">
-      STUDIO OF BEAUTY &middot; studioofbeautyy@gmail.com
+      STUDIO OF BEAUTY &middot; studioofbeautyyy@gmail.com
     </div>
   </div>
 </body>
