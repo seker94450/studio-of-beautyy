@@ -170,8 +170,21 @@ function buildCartPage() {
         <div>${total.toFixed(2).replace('.', ',')} €</div>
       </div>
       <div class="cart-checkout-buttons">
-        <button class="btn btn-primary" type="button" onclick="checkoutStripe()">Payer par CB / Visa</button>
-        <button class="btn btn-paypal" type="button" onclick="checkoutPaypal()">Payer avec PayPal</button>
+        <button class="btn-checkout btn-checkout-card" type="button" onclick="checkoutStripe()">
+          <span class="btn-checkout-label">Payer par carte</span>
+          <span class="btn-checkout-logos">
+            <svg viewBox="0 0 38 24" xmlns="http://www.w3.org/2000/svg" height="22"><rect width="38" height="24" rx="3" fill="#005498"/><text x="5" y="17" font-family="Arial,sans-serif" font-weight="bold" font-size="13" fill="white">CB</text></svg>
+            <svg viewBox="0 0 54 24" xmlns="http://www.w3.org/2000/svg" height="22"><rect width="54" height="24" rx="3" fill="white" stroke="#ddd" stroke-width="1"/><text x="5" y="17" font-family="Arial,sans-serif" font-weight="900" font-size="14" fill="#1A1F71" letter-spacing="1.5">VISA</text></svg>
+          </span>
+        </button>
+        <button class="btn-checkout btn-checkout-paypal" type="button" onclick="checkoutPaypal()">
+          <svg viewBox="0 0 100 32" xmlns="http://www.w3.org/2000/svg" height="28">
+            <circle cx="18" cy="16" r="14" fill="#003087" opacity="0.9"/>
+            <circle cx="26" cy="16" r="14" fill="#009cde" opacity="0.85"/>
+            <text x="44" y="22" font-family="Arial,sans-serif" font-weight="bold" font-size="16" fill="#003087">Pay</text>
+            <text x="71" y="22" font-family="Arial,sans-serif" font-weight="bold" font-size="16" fill="#009cde">Pal</text>
+          </svg>
+        </button>
       </div>
       <a href="index.html" class="back-to-home">Retour à l'accueil</a>
     </div>

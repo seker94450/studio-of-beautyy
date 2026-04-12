@@ -181,8 +181,52 @@ main { padding-top: var(--header-h); }
 .cart-checkout-buttons {
   display: flex;
   gap: 1rem;
-  margin-top: 1.5rem;
+  margin-top: 2rem;
   flex-wrap: wrap;
+}
+.btn-checkout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+  padding: 0.9rem 1.4rem;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+  min-width: 200px;
+}
+.btn-checkout:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.13);
+}
+.btn-checkout:active {
+  transform: translateY(0);
+}
+.btn-checkout-card {
+  background: #fff;
+  color: #1a1a1a;
+  border: 1px solid rgba(0,0,0,0.1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.btn-checkout-label {
+  white-space: nowrap;
+}
+.btn-checkout-logos {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-checkout-paypal {
+  background: #ffc439;
+  box-shadow: 0 2px 8px rgba(255,196,57,0.3);
+  min-width: 180px;
+  justify-content: center;
 }
 .cart-page {
   padding: 4rem 2rem 6rem;
