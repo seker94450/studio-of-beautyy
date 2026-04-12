@@ -251,7 +251,7 @@ main { padding-top: var(--header-h); }
   color: var(--text-dark);
   font-family: 'Jost', sans-serif;
   font-weight: 400;
-  font-size: 1.35rem;
+  font-size: 0.72rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   transition: all 0.3s ease;
