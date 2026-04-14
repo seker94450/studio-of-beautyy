@@ -3,6 +3,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const { Pool } = require('pg');
 const Stripe = require('stripe');
 const sgMail = require('@sendgrid/mail');
@@ -53,6 +54,15 @@ async function initDB() {
       "createdAt" TEXT NOT NULL
     )
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS download_tokens (
+      id SERIAL PRIMARY KEY,
+      token TEXT NOT NULL UNIQUE,
+      file_key TEXT NOT NULL,
+      email TEXT NOT NULL,
+      expires_at TEXT NOT NULL
+    )
+  `);
 }
 
 initDB().then(() => {
@@ -65,6 +75,27 @@ initDB().then(() => {
 app.use(cors());
 app.use(express.json());
 
+// ── DOWNLOAD TOKENS ───────────────────────────────────────────────────────────
+async function createProductDownloadTokens(email, items) {
+  const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+  const tokens = [];
+
+  const slugsAdded = new Set();
+  for (const item of items) {
+    const slug = item.slug;
+    if (slugsAdded.has(slug) || !PRODUCT_FILES[slug]) continue;
+    const productToken = crypto.randomBytes(32).toString('hex');
+    await pool.query(
+      `INSERT INTO download_tokens (token, file_key, email, expires_at) VALUES ($1, $2, $3, $4)`,
+      [productToken, slug, email, expiresAt]
+    );
+    tokens.push({ label: item.title, token: productToken });
+    slugsAdded.add(slug);
+  }
+
+  return tokens;
+}
+
 // ── EMAIL ─────────────────────────────────────────────────────────────────────
 async function sendOrderEmail(toEmail, items) {
   if (!process.env.SENDGRID_API_KEY) {
@@ -73,35 +104,31 @@ async function sendOrderEmail(toEmail, items) {
   }
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-  const attachments = [];
-
-  // Guide d'utilisation
-  if (fs.existsSync(GUIDE_FILE)) {
-    attachments.push({
-      filename: 'Guide_Studio_of_Beauty.pdf',
-      path: GUIDE_FILE
-    });
-  } else {
-    console.warn('[Email] Guide introuvable :', GUIDE_FILE);
-  }
-
-  // Fichiers produits achetés
-  const slugsAdded = new Set();
-  for (const item of items) {
-    const slug = item.slug;
-    if (slugsAdded.has(slug)) continue;
-    const filePath = PRODUCT_FILES[slug];
-    if (filePath && fs.existsSync(filePath)) {
-      attachments.push({ filename: `${item.title}.pdf`, path: filePath });
-      slugsAdded.add(slug);
-    } else {
-      console.warn(`[Email] Fichier produit introuvable pour "${slug}" :`, filePath);
-    }
-  }
+  // Liens de téléchargement sécurisés pour les carnets (fichiers lourds)
+  const tokens = await createProductDownloadTokens(toEmail, items);
 
   const productListHtml = items.map(i =>
     `<tr><td style="padding:8px 0;border-bottom:1px solid #ece9e4;">${i.title}</td><td style="padding:8px 0;border-bottom:1px solid #ece9e4;text-align:right;">x${i.quantity} — ${i.price}</td></tr>`
   ).join('');
+
+  const downloadLinksHtml = tokens.map(t =>
+    `<a href="${SITE_URL}/api/download/${t.token}" style="display:block;margin:10px 0;padding:12px 20px;background:#2a2826;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;text-align:center;">
+      Télécharger — ${t.label}
+    </a>`
+  ).join('');
+
+  // Guide en pièce jointe
+  const attachments = [];
+  if (fs.existsSync(GUIDE_FILE)) {
+    attachments.push({
+      content: fs.readFileSync(GUIDE_FILE).toString('base64'),
+      filename: 'Guide_Studio_of_Beauty.pdf',
+      type: 'application/pdf',
+      disposition: 'attachment'
+    });
+  } else {
+    console.warn('[Email] Guide introuvable :', GUIDE_FILE);
+  }
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -114,13 +141,16 @@ async function sendOrderEmail(toEmail, items) {
     <div style="padding:36px 40px;color:#2a2826;">
       <h2 style="font-weight:400;font-size:22px;margin:0 0 12px;">Merci pour votre commande&nbsp;!</h2>
       <p style="color:#666;font-size:15px;line-height:1.6;margin:0 0 24px;">
-        Votre carnet digital est joint à cet e-mail, ainsi que le guide d'utilisation.<br>
-        Si vous ne voyez pas les pièces jointes, vérifiez vos spams.
+        Le guide d'utilisation est joint à cet email.<br>
+        Vos carnets sont disponibles via les liens ci-dessous (valables <strong>72 heures</strong>).
       </p>
-      <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:28px;">
         ${productListHtml}
       </table>
-      <p style="margin:28px 0 0;font-size:13px;color:#999;">
+      <div style="margin:0 0 28px;">
+        ${downloadLinksHtml}
+      </div>
+      <p style="font-size:13px;color:#999;margin:0;">
         Une question ? Écrivez-nous à
         <a href="mailto:studioofbeautyy@gmail.com" style="color:#2a2826;">studioofbeautyy@gmail.com</a>
       </p>
@@ -136,20 +166,43 @@ async function sendOrderEmail(toEmail, items) {
     await sgMail.send({
       from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyy@gmail.com' },
       to: toEmail,
-      subject: 'Votre commande Studio of Beauty — Carnet digital',
+      subject: 'Votre commande Studio of Beauty — Vos carnets digitaux',
       html,
-      attachments: attachments.map(a => ({
-        content: fs.readFileSync(a.path).toString('base64'),
-        filename: a.filename,
-        type: 'application/pdf',
-        disposition: 'attachment'
-      }))
+      attachments
     });
     console.log('[Email] Envoyé à', toEmail);
   } catch (err) {
     console.error('[Email] Erreur envoi :', err.message, err.response?.body);
   }
 }
+
+// ── TÉLÉCHARGEMENT SÉCURISÉ ───────────────────────────────────────────────────
+app.get('/api/download/:token', async (req, res) => {
+  const { token } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT * FROM download_tokens WHERE token = $1`,
+      [token]
+    );
+    const row = result.rows[0];
+    if (!row) return res.status(404).send('Lien invalide.');
+    if (new Date(row.expires_at) < new Date()) return res.status(410).send('Ce lien a expiré. Contactez-nous à studioofbeautyy@gmail.com');
+
+    const fileKey = row.file_key;
+    const filePath = fileKey === 'guide' ? GUIDE_FILE : PRODUCT_FILES[fileKey];
+    if (!filePath || !fs.existsSync(filePath)) {
+      return res.status(404).send('Fichier introuvable. Contactez-nous à studioofbeautyy@gmail.com');
+    }
+
+    const filename = fileKey === 'guide' ? 'Guide_Studio_of_Beauty.pdf' : `${fileKey}.pdf`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    fs.createReadStream(filePath).pipe(res);
+  } catch (err) {
+    console.error('[Download] Erreur :', err.message);
+    res.status(500).send('Erreur serveur.');
+  }
+});
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 function serializeUser(user) {
