@@ -24,12 +24,14 @@ const pool = new Pool({
 // Stockage temporaire des commandes PayPal en attente
 const pendingPaypalOrders = new Map();
 
-// Mapping slug -> fichier PDF produit
+const R2_BASE_URL = process.env.R2_BASE_URL || 'https://pub-7f197ac13eac4cfdb1c383886c9b0100.r2.dev';
+
+// Mapping slug -> nom du fichier sur R2
 const PRODUCT_FILES = {
-  'brow-beige': path.join(__dirname, 'files/products/essentiel-brow-beige.pdf'),
-  'brow-gray':  path.join(__dirname, 'files/products/essentiel-brow-gris.pdf'),
-  'lash-beige': path.join(__dirname, 'files/products/essentiel-lash-beige.pdf'),
-  'lash-gray':  path.join(__dirname, 'files/products/essentiel-lash-gris.pdf')
+  'brow-beige': 'essentiel-brow-beige.pdf',
+  'brow-gray':  'essentiel-brow-gris.pdf',
+  'lash-beige': 'essentiel-lash-beige.pdf',
+  'lash-gray':  'essentiel-lash-gris.pdf'
 };
 
 const GUIDE_FILE = path.join(__dirname, 'files/guide_studio_of_beauty.pdf');
@@ -189,15 +191,10 @@ app.get('/api/download/:token', async (req, res) => {
     if (new Date(row.expires_at) < new Date()) return res.status(410).send('Ce lien a expiré. Contactez-nous à studioofbeautyy@gmail.com');
 
     const fileKey = row.file_key;
-    const filePath = fileKey === 'guide' ? GUIDE_FILE : PRODUCT_FILES[fileKey];
-    if (!filePath || !fs.existsSync(filePath)) {
-      return res.status(404).send('Fichier introuvable. Contactez-nous à studioofbeautyy@gmail.com');
-    }
+    const filename = PRODUCT_FILES[fileKey];
+    if (!filename) return res.status(404).send('Fichier introuvable. Contactez-nous à studioofbeautyy@gmail.com');
 
-    const filename = fileKey === 'guide' ? 'Guide_Studio_of_Beauty.pdf' : `${fileKey}.pdf`;
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Type', 'application/pdf');
-    fs.createReadStream(filePath).pipe(res);
+    res.redirect(`${R2_BASE_URL}/${filename}`);
   } catch (err) {
     console.error('[Download] Erreur :', err.message);
     res.status(500).send('Erreur serveur.');
