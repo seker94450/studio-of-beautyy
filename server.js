@@ -6,7 +6,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const Stripe = require('stripe');
-const sgMail = require('@sendgrid/mail');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -100,11 +100,16 @@ async function createProductDownloadTokens(email, items) {
 
 // ── EMAIL ─────────────────────────────────────────────────────────────────────
 async function sendOrderEmail(toEmail, items) {
-  if (!process.env.SENDGRID_API_KEY) {
-    console.warn('[Email] Non configuré — SENDGRID_API_KEY manquant.');
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.warn('[Email] Non configuré — GMAIL_USER ou GMAIL_APP_PASSWORD manquant.');
     return;
   }
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
+    auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD }
+  });
 
   const productListHtml = items.map(i =>
     `<tr><td style="padding:8px 0;border-bottom:1px solid #ece9e4;">${i.title}</td><td style="padding:8px 0;border-bottom:1px solid #ece9e4;text-align:right;">x${i.quantity} — ${i.price}</td></tr>`
@@ -115,10 +120,9 @@ async function sendOrderEmail(toEmail, items) {
 
   if (fs.existsSync(GUIDE_FILE)) {
     attachments.push({
-      content: fs.readFileSync(GUIDE_FILE).toString('base64'),
+      content: fs.readFileSync(GUIDE_FILE),
       filename: 'Guide_Studio_of_Beauty.pdf',
-      type: 'application/pdf',
-      disposition: 'attachment'
+      contentType: 'application/pdf'
     });
   } else {
     console.warn('[Email] Guide introuvable :', GUIDE_FILE);
@@ -141,12 +145,7 @@ async function sendOrderEmail(toEmail, items) {
         if (!resp.ok) throw new Error(`R2 ${resp.status}`);
         buffer = Buffer.from(await resp.arrayBuffer());
       }
-      attachments.push({
-        content: buffer.toString('base64'),
-        filename,
-        type: 'application/pdf',
-        disposition: 'attachment'
-      });
+      attachments.push({ content: buffer, filename, contentType: 'application/pdf' });
     } catch (err) {
       console.warn('[Email] Carnet introuvable :', filename, err.message);
     }
@@ -182,8 +181,8 @@ async function sendOrderEmail(toEmail, items) {
 </html>`;
 
   try {
-    await sgMail.send({
-      from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyy@gmail.com' },
+    await transporter.sendMail({
+      from: `"Studio of Beauty" <${process.env.GMAIL_USER}>`,
       to: toEmail,
       subject: 'Votre commande Studio of Beauty — Vos carnets digitaux',
       html,
@@ -191,7 +190,7 @@ async function sendOrderEmail(toEmail, items) {
     });
     console.log('[Email] Envoyé à', toEmail);
   } catch (err) {
-    console.error('[Email] Erreur envoi :', err.message, err.response?.body);
+    console.error('[Email] Erreur envoi :', err.message);
   }
 }
 
@@ -334,21 +333,24 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
 app.get('/api/test-email', async (req, res) => {
   const to = req.query.to;
   if (!to) return res.status(400).json({ error: 'Paramètre ?to=email manquant' });
-  if (!process.env.SENDGRID_API_KEY) {
-    return res.status(503).json({ error: 'SENDGRID_API_KEY non configuré' });
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    return res.status(503).json({ error: 'GMAIL_USER ou GMAIL_APP_PASSWORD non configuré' });
   }
   try {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    await sgMail.send({
-      from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyy@gmail.com' },
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com', port: 465, secure: true,
+      auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD }
+    });
+    await transporter.sendMail({
+      from: `"Studio of Beauty" <${process.env.GMAIL_USER}>`,
       to,
       subject: 'Test email Studio of Beauty',
       text: 'Si vous recevez cet email, la configuration fonctionne !'
     });
     res.json({ success: true, message: `Email envoyé à ${to}` });
   } catch (err) {
-    console.error('[Test email] Erreur :', err.response?.body || err.message);
-    res.status(500).json({ error: err.message, details: err.response?.body?.errors });
+    console.error('[Test email] Erreur :', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
