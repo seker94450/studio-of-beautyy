@@ -1058,7 +1058,6 @@ if (reviewForm) {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  initSplashScreen();
   initPageTransitions();
   injectLogo();
   buildProductPage();
