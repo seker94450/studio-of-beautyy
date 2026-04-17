@@ -381,6 +381,10 @@ async function checkoutSepa() {
         <input type="text" id="sepaName" placeholder="Votre nom et prénom" value="${user ? user.firstName + ' ' + user.lastName : ''}">
       </div>
       <div class="form-row">
+        <label>Email</label>
+        <input type="email" id="sepaEmail" placeholder="votre@email.com" value="${user?.email || ''}">
+      </div>
+      <div class="form-row">
         <label>IBAN</label>
         <div id="sepaIbanEl" class="stripe-card-el"></div>
       </div>
@@ -420,9 +424,11 @@ async function checkoutSepa() {
       const btn = document.getElementById('sepaPayBtn');
       const errEl = document.getElementById('sepaError');
       const name = document.getElementById('sepaName').value.trim();
+      const email = document.getElementById('sepaEmail').value.trim();
       const mandate = document.getElementById('sepaMandate').checked;
 
       if (!name) { errEl.textContent = 'Veuillez entrer votre nom complet.'; return; }
+      if (!email || !email.includes('@')) { errEl.textContent = 'Veuillez entrer une adresse email valide.'; return; }
       if (!mandate) { errEl.textContent = 'Veuillez accepter le mandat de prélèvement.'; return; }
 
       btn.disabled = true;
@@ -432,7 +438,7 @@ async function checkoutSepa() {
       const { error, paymentIntent } = await stripe.confirmSepaDebitPayment(data.clientSecret, {
         payment_method: {
           sepa_debit: iban,
-          billing_details: { name, email: user?.email || '' }
+          billing_details: { name, email }
         }
       });
 
