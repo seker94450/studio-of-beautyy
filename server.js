@@ -6,8 +6,8 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 const Stripe = require('stripe');
+const sgMail = require('@sendgrid/mail');
 const nodemailer = require('nodemailer');
-const { google } = require('googleapis');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -100,21 +100,12 @@ async function createProductDownloadTokens(email, items) {
 }
 
 // ── EMAIL ─────────────────────────────────────────────────────────────────────
-function createGmailClient() {
-  const oauth2Client = new google.auth.OAuth2(
-    process.env.GMAIL_CLIENT_ID,
-    process.env.GMAIL_CLIENT_SECRET,
-    'http://localhost:3030/callback'
-  );
-  oauth2Client.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
-  return google.gmail({ version: 'v1', auth: oauth2Client });
-}
-
 async function sendOrderEmail(toEmail, items) {
-  if (!process.env.GMAIL_CLIENT_ID || !process.env.GMAIL_REFRESH_TOKEN) {
-    console.warn('[Email] Non configuré — GMAIL_CLIENT_ID ou GMAIL_REFRESH_TOKEN manquant.');
+  if (!process.env.SENDGRID_API_KEY) {
+    console.warn('[Email] Non configuré — SENDGRID_API_KEY manquant.');
     return;
   }
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
   const productListHtml = items.map(i =>
     `<tr><td style="padding:8px 0;border-bottom:1px solid #ece9e4;">${i.title}</td><td style="padding:8px 0;border-bottom:1px solid #ece9e4;text-align:right;">x${i.quantity} — ${i.price}</td></tr>`
@@ -187,20 +178,16 @@ async function sendOrderEmail(toEmail, items) {
 </html>`;
 
   try {
-    const transporter = nodemailer.createTransport({ streamTransport: true, newline: 'unix', buffer: true });
-    const info = await transporter.sendMail({
-      from: `"Studio of Beauty" <${process.env.GMAIL_USER}>`,
+    await sgMail.send({
+      from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyy@gmail.com' },
       to: toEmail,
       subject: 'Votre commande Studio of Beauty — Vos carnets digitaux',
       html,
       attachments
     });
-    const raw = info.message.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    const gmail = createGmailClient();
-    await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
     console.log('[Email] Envoyé à', toEmail);
   } catch (err) {
-    console.error('[Email] Erreur envoi :', err.message);
+    console.error('[Email] Erreur envoi :', err.message, err.response?.body);
   }
 }
 
@@ -343,20 +330,17 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
 app.get('/api/test-email', async (req, res) => {
   const to = req.query.to;
   if (!to) return res.status(400).json({ error: 'Paramètre ?to=email manquant' });
-  if (!process.env.GMAIL_CLIENT_ID || !process.env.GMAIL_REFRESH_TOKEN) {
-    return res.status(503).json({ error: 'Gmail API non configuré' });
+  if (!process.env.SENDGRID_API_KEY) {
+    return res.status(503).json({ error: 'SENDGRID_API_KEY non configuré' });
   }
   try {
-    const transporter = nodemailer.createTransport({ streamTransport: true, newline: 'unix', buffer: true });
-    const info = await transporter.sendMail({
-      from: `"Studio of Beauty" <${process.env.GMAIL_USER}>`,
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    await sgMail.send({
+      from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyy@gmail.com' },
       to,
       subject: 'Test email Studio of Beauty',
       text: 'Si vous recevez cet email, la configuration fonctionne !'
     });
-    const raw = info.message.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    const gmail = createGmailClient();
-    await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
     res.json({ success: true, message: `Email envoyé à ${to}` });
   } catch (err) {
     console.error('[Test email] Erreur :', err.message);
