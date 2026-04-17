@@ -503,7 +503,7 @@ app.get('/api/checkout/stripe/success', async (req, res) => {
 // ── PAYPAL ────────────────────────────────────────────────────────────────────
 async function getPaypalToken() {
   const creds = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
-  const resp = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+  const resp = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
     method: 'POST',
     headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'grant_type=client_credentials'
@@ -523,7 +523,7 @@ app.post('/api/checkout/paypal', async (req, res) => {
 
   try {
     const token = await getPaypalToken();
-    const resp = await fetch('https://api-m.paypal.com/v2/checkout/orders', {
+    const resp = await fetch('https://api-m.sandbox.paypal.com/v2/checkout/orders', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -556,7 +556,7 @@ app.get('/api/checkout/paypal/success', async (req, res) => {
 
   try {
     const accessToken = await getPaypalToken();
-    const captureResp = await fetch(`https://api-m.paypal.com/v2/checkout/orders/${orderId}/capture`, {
+    const captureResp = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
     });
