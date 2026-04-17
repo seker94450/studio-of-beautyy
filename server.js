@@ -128,16 +128,27 @@ async function sendOrderEmail(toEmail, items) {
   for (const item of items) {
     const slug = item.slug;
     if (slugsAdded.has(slug) || !PRODUCT_FILES[slug]) continue;
-    const filePath = path.join(__dirname, 'files', PRODUCT_FILES[slug]);
-    if (fs.existsSync(filePath)) {
+    const filename = PRODUCT_FILES[slug];
+    const localPath = path.join(__dirname, 'files', filename);
+    try {
+      let buffer;
+      if (fs.existsSync(localPath)) {
+        buffer = fs.readFileSync(localPath);
+      } else {
+        const r2Url = `${R2_BASE_URL}/${filename}`;
+        console.log('[Email] Téléchargement depuis R2 :', r2Url);
+        const resp = await fetch(r2Url);
+        if (!resp.ok) throw new Error(`R2 ${resp.status}`);
+        buffer = Buffer.from(await resp.arrayBuffer());
+      }
       attachments.push({
-        content: fs.readFileSync(filePath).toString('base64'),
-        filename: PRODUCT_FILES[slug],
+        content: buffer.toString('base64'),
+        filename,
         type: 'application/pdf',
         disposition: 'attachment'
       });
-    } else {
-      console.warn('[Email] Carnet introuvable :', filePath);
+    } catch (err) {
+      console.warn('[Email] Carnet introuvable :', filename, err.message);
     }
     slugsAdded.add(slug);
   }
