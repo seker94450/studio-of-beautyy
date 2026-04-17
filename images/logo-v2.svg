@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 180" width="340" height="180">
+
+  <!-- Ligne gauche -->
+  <line x1="20" y1="90" x2="90" y2="90" stroke="#c4a882" stroke-width="0.8"/>
+  <!-- Ligne droite -->
+  <line x1="250" y1="90" x2="320" y2="90" stroke="#c4a882" stroke-width="0.8"/>
+
+  <!-- Petit losange gauche -->
+  <rect x="85" y="86" width="8" height="8" fill="#c4a882" transform="rotate(45 89 90)"/>
+  <!-- Petit losange droite -->
+  <rect x="247" y="86" width="8" height="8" fill="#c4a882" transform="rotate(45 251 90)"/>
+
+  <!-- S grand monogramme -->
+  <text x="170" y="72"
+    font-family="Georgia, serif"
+    font-size="11"
+    font-weight="400"
+    fill="#c4a882"
+    text-anchor="middle"
+    letter-spacing="6">✦ STUDIO OF BEAUTY ✦</text>
+
+  <!-- Trait fin -->
+  <line x1="95" y1="80" x2="245" y2="80" stroke="#2a2826" stroke-width="0.4" opacity="0.3"/>
+
+  <!-- SOB monogramme -->
+  <text x="170" y="118"
+    font-family="Georgia, serif"
+    font-size="52"
+    font-style="italic"
+    font-weight="400"
+    fill="#2a2826"
+    text-anchor="middle"
+    letter-spacing="-2">SoB</text>
+
+  <!-- Trait fin bas -->
+  <line x1="95" y1="128" x2="245" y2="128" stroke="#2a2826" stroke-width="0.4" opacity="0.3"/>
+
+  <text x="170" y="148"
+    font-family="Georgia, serif"
+    font-size="8"
+    fill="#c4a882"
+    text-anchor="middle"
+    letter-spacing="5">CARNETS DIGITAUX</text>
+
+</svg>

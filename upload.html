@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Upload R2</title>
+<style>body{font-family:Arial,sans-serif;max-width:600px;margin:40px auto;padding:20px;}
+.file{margin:20px 0;padding:16px;border:1px solid #ddd;border-radius:8px;}
+button{background:#2a2826;color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;}
+.status{margin-top:8px;font-size:14px;}</style>
+</head>
+<body>
+<h2>Upload des carnets vers R2</h2>
+<p>Sélectionne chaque fichier et clique Upload.</p>
+
+<div class="file" id="div-essentiel-brow-beige.pdf">
+  <strong>essentiel-brow-beige.pdf</strong><br>
+  <input type="file" accept="application/pdf" id="file-essentiel-brow-beige.pdf">
+  <button onclick="upload('essentiel-brow-beige.pdf', 'https://studio-of-beauty.f0ce5c80ec36db8652a44cdc5a2f737b.r2.cloudflarestorage.com/essentiel-brow-beige.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=d507d9b6b8a4d0ed75d32abd75290b04%2F20260416%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260416T184431Z&X-Amz-Expires=3600&X-Amz-Signature=a567b10afbc5a4f50b04a5f450d82dd5f990c56fcca6d3e4468b2722a3b7e273&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject')">Upload</button>
+  <div class="status" id="status-essentiel-brow-beige.pdf"></div>
+</div>
+<div class="file" id="div-essentiel-brow-gris.pdf">
+  <strong>essentiel-brow-gris.pdf</strong><br>
+  <input type="file" accept="application/pdf" id="file-essentiel-brow-gris.pdf">
+  <button onclick="upload('essentiel-brow-gris.pdf', 'https://studio-of-beauty.f0ce5c80ec36db8652a44cdc5a2f737b.r2.cloudflarestorage.com/essentiel-brow-gris.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=d507d9b6b8a4d0ed75d32abd75290b04%2F20260416%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260416T184431Z&X-Amz-Expires=3600&X-Amz-Signature=4dcb324e38d7befd5954f0330f03c0cac7249479ec80ea73672195b5e7d57132&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject')">Upload</button>
+  <div class="status" id="status-essentiel-brow-gris.pdf"></div>
+</div>
+<div class="file" id="div-essentiel-lash-beige.pdf">
+  <strong>essentiel-lash-beige.pdf</strong><br>
+  <input type="file" accept="application/pdf" id="file-essentiel-lash-beige.pdf">
+  <button onclick="upload('essentiel-lash-beige.pdf', 'https://studio-of-beauty.f0ce5c80ec36db8652a44cdc5a2f737b.r2.cloudflarestorage.com/essentiel-lash-beige.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=d507d9b6b8a4d0ed75d32abd75290b04%2F20260416%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260416T184431Z&X-Amz-Expires=3600&X-Amz-Signature=3281c0d76736e2427738adfffb73830f092c00e6e6e5ae1863f596a65db94d09&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject')">Upload</button>
+  <div class="status" id="status-essentiel-lash-beige.pdf"></div>
+</div>
+<div class="file" id="div-essentiel-lash-gris.pdf">
+  <strong>essentiel-lash-gris.pdf</strong><br>
+  <input type="file" accept="application/pdf" id="file-essentiel-lash-gris.pdf">
+  <button onclick="upload('essentiel-lash-gris.pdf', 'https://studio-of-beauty.f0ce5c80ec36db8652a44cdc5a2f737b.r2.cloudflarestorage.com/essentiel-lash-gris.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=d507d9b6b8a4d0ed75d32abd75290b04%2F20260416%2Fauto%2Fs3%2Faws4_request&X-Amz-Date=20260416T184431Z&X-Amz-Expires=3600&X-Amz-Signature=5567d6bf947fc093fdc0e697d47c9dd3769426a1b12a0a1dfd7f0855e335c25c&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject')">Upload</button>
+  <div class="status" id="status-essentiel-lash-gris.pdf"></div>
+</div>
+<script>
+async function upload(name, url) {
+  const input = document.getElementById('file-' + name);
+  const status = document.getElementById('status-' + name);
+  if (!input.files[0]) { status.textContent = '⚠️ Sélectionne un fichier'; return; }
+  status.textContent = '⬆️ Upload en cours...';
+  try {
+    const resp = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/pdf' },
+      body: input.files[0]
+    });
+    if (resp.ok) {
+      status.textContent = '✅ Uploadé avec succès !';
+      status.style.color = 'green';
+    } else {
+      status.textContent = '❌ Erreur : ' + resp.status + ' ' + await resp.text();
+      status.style.color = 'red';
+    }
+  } catch(e) {
+    status.textContent = '❌ ' + e.message;
+    status.style.color = 'red';
+  }
+}
+</script>
+</body></html>
