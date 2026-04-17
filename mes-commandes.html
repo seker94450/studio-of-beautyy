@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes commandes — Studio of Beauty</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="menu-overlay" id="menuOverlay">
+  <button class="menu-close" onclick="closeMenu()">Fermer ?</button>
+  <nav class="menu-links">
+    <a href="index.html">Accueil</a>
+    <a href="shop.html">Boutique</a>
+    <a href="product-brow-beige.html">L'essentiel Brow</a>
+    <a href="product-lash-beige.html">L'essentiel Lash</a>
+  </nav>
+</div>
+<header>
+  <div class="header-left"></div>
+  <div class="header-center">
+    <nav class="top-nav">
+      <a href="index.html">Accueil</a>
+      <a href="shop.html">Boutique</a>
+      <a href="product-brow-beige.html">L'essentiel Brow</a>
+      <a href="product-lash-beige.html">L'essentiel Lash</a>
+    </nav>
+  </div>
+  <div class="header-right">
+    <div class="header-icon" id="accountIcon" onclick="goToAccount()" title="Compte">
+      <svg id="accountSvg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg>
+      <span class="avatar-badge" id="avatarBadge"></span>
+    </div>
+    <a href="cart.html" class="header-icon cart-link" title="Panier">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="cart-badge">0</span>
+    </a>
+  </div>
+</header>
+<main>
+  <div class="mes-commandes-template"></div>
+</main>
+<script src="js/app.js"></script>
+<script>if (!getCurrentUser()) location.href = 'signup.html';</script>
+</body>
+</html>

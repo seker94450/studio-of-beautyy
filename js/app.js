@@ -45,15 +45,24 @@ const PRODUCTS = {
   }
 };
 
-const STORAGE_USERS = 'sob_users';
+const SLUG_TO_PAGE = {
+  'brow-beige': 'product-brow-beige.html',
+  'brow-gray':  'product-brow-gray.html',
+  'lash-beige': 'product-lash-beige.html',
+  'lash-gray':  'product-lash-gray.html'
+};
+
+const STORAGE_USERS   = 'sob_users';
 const STORAGE_SESSION = 'sob_current_user';
 const STORAGE_REVIEWS = 'sob_reviews';
-const STORAGE_CART = 'sob_cart';
+const STORAGE_CART    = 'sob_cart';
+const STORAGE_ORDERS  = 'sob_orders';
 const API_URL = '';
 
 let productSliderIntervals = {};
 let homeReviewsInterval = null;
 
+// ── PANIER ────────────────────────────────────────────────────────────────────
 function getCart() {
   return JSON.parse(localStorage.getItem(STORAGE_CART) || '[]');
 }
@@ -70,18 +79,62 @@ function updateCartBadge() {
   badge.textContent = count;
 }
 
+// ── TOAST NOTIFICATION ────────────────────────────────────────────────────────
+function showToast(message) {
+  const existing = document.querySelector('.sob-toast');
+  if (existing) existing.remove();
+
+  const toast = document.createElement('div');
+  toast.className = 'sob-toast';
+  toast.innerHTML = `
+    <span class="sob-toast-text">${message}</span>
+    <a href="cart.html" class="sob-toast-btn">Voir le panier →</a>
+  `;
+  document.body.appendChild(toast);
+
+  const cartLink = document.querySelector('.cart-link');
+  if (cartLink) {
+    cartLink.classList.add('cart-bounce');
+    setTimeout(() => cartLink.classList.remove('cart-bounce'), 700);
+  }
+
+  setTimeout(() => {
+    toast.classList.add('sob-toast-hide');
+    setTimeout(() => toast.remove(), 400);
+  }, 3200);
+}
+
+// ── COMMANDES ─────────────────────────────────────────────────────────────────
+function getOrders() {
+  return JSON.parse(localStorage.getItem(STORAGE_ORDERS) || '[]');
+}
+
+function saveOrder(items, total) {
+  const orders = getOrders();
+  orders.unshift({ id: Date.now(), items, total, createdAt: new Date().toISOString() });
+  localStorage.setItem(STORAGE_ORDERS, JSON.stringify(orders));
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
 async function apiPost(path, body) {
   const response = await fetch(`${API_URL}${path}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   const data = await response.json();
-  if (!response.ok) {
-    throw new Error(data.error || 'Erreur réseau');
-  }
+  if (!response.ok) throw new Error(data.error || 'Erreur réseau');
+  return data;
+}
+
+async function apiPut(path, body) {
+  const response = await fetch(`${API_URL}${path}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || 'Erreur réseau');
   return data;
 }
 
@@ -89,13 +142,13 @@ function isLoggedIn() {
   return Boolean(getCurrentUser());
 }
 
+// ── AJOUTER AU PANIER ─────────────────────────────────────────────────────────
 function addToCart(slug) {
   if (!isLoggedIn()) {
     alert('Vous devez créer un compte pour ajouter un produit au panier.');
     location.href = 'signup.html';
     return;
   }
-
   const product = PRODUCTS[slug];
   if (!product) return;
   const cart = getCart();
@@ -103,16 +156,10 @@ function addToCart(slug) {
   if (item) {
     item.quantity += 1;
   } else {
-    cart.push({
-      slug,
-      title: `${product.title} ${product.color}`,
-      price: product.price,
-      quantity: 1,
-      image: product.images[0]
-    });
+    cart.push({ slug, title: `${product.title} ${product.color}`, price: product.price, quantity: 1, image: product.images[0] });
   }
   saveCart(cart);
-  alert('Votre produit a bien été rajouté au panier');
+  showToast('Produit ajouté au panier !');
 }
 
 function buyNow(slug) {
@@ -121,7 +168,16 @@ function buyNow(slug) {
     location.href = 'signup.html';
     return;
   }
-  addToCart(slug);
+  const product = PRODUCTS[slug];
+  if (!product) return;
+  const cart = getCart();
+  const item = cart.find(entry => entry.slug === slug);
+  if (item) {
+    item.quantity += 1;
+  } else {
+    cart.push({ slug, title: `${product.title} ${product.color}`, price: product.price, quantity: 1, image: product.images[0] });
+  }
+  saveCart(cart);
   location.href = 'cart.html';
 }
 
@@ -135,18 +191,37 @@ function formatPrice(priceString) {
   return priceString.replace(',', '.').replace(/[^0-9.]/g, '');
 }
 
+// ── PANIER PAGE ───────────────────────────────────────────────────────────────
 function buildCartPage() {
   const page = document.querySelector('.cart-page-template');
   if (!page) return;
   const cart = getCart();
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment') === 'success') {
+    const cartToSave = getCart();
+    if (cartToSave.length) {
+      const total = cartToSave.reduce((sum, item) => sum + parseFloat(formatPrice(item.price)) * item.quantity, 0);
+      saveOrder(cartToSave, total);
+    }
+    localStorage.removeItem(STORAGE_CART);
+    page.innerHTML = '<div class="cart-empty">Merci pour votre achat ! Vous recevrez votre carnet par e-mail.</div><a href="index.html" class="back-to-home">Retour à l\'accueil</a>';
+    return;
+  }
+
+  if (params.get('payment') === 'cancel') {
+    const msg = document.createElement('div');
+    msg.className = 'auth-message error';
+    msg.textContent = 'Paiement annulé.';
+    page.prepend(msg);
+  }
+
   if (!cart.length) {
     page.innerHTML = '<div class="cart-empty">Rien dans votre panier</div><a href="index.html" class="back-to-home">Retour à l\'accueil</a>';
     return;
   }
-  const total = cart.reduce((sum, item) => {
-    const price = parseFloat(formatPrice(item.price));
-    return sum + price * item.quantity;
-  }, 0);
+
+  const total = cart.reduce((sum, item) => sum + parseFloat(formatPrice(item.price)) * item.quantity, 0);
   page.innerHTML = `
     <div class="cart-page">
       <h1>Votre panier</h1>
@@ -192,17 +267,6 @@ function buildCartPage() {
   page.querySelectorAll('.cart-item-remove').forEach(btn => {
     btn.addEventListener('click', () => removeFromCart(btn.dataset.slug));
   });
-
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('payment') === 'success') {
-    localStorage.removeItem(STORAGE_CART);
-    page.innerHTML = '<div class="cart-empty">Merci pour votre achat ! Vous recevrez votre carnet par e-mail.</div><a href="index.html" class="back-to-home">Retour à l\'accueil</a>';
-  } else if (params.get('payment') === 'cancel') {
-    const msg = document.createElement('div');
-    msg.className = 'auth-message error';
-    msg.textContent = 'Paiement annulé.';
-    page.prepend(msg);
-  }
 }
 
 async function checkoutStripe() {
@@ -229,9 +293,9 @@ async function checkoutPaypal() {
   }
 }
 
+// ── AVIS ──────────────────────────────────────────────────────────────────────
 function formatReviewDate(dateString) {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  return new Date(dateString).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 function stars(rating) {
@@ -311,6 +375,7 @@ function closeReviewModal() {
   showMessage('reviewMessage', '', 'success');
 }
 
+// ── BOUTIQUE ──────────────────────────────────────────────────────────────────
 function buildShopCards() {
   document.querySelectorAll('.shop-card').forEach(card => {
     const productKey = card.dataset.product;
@@ -331,14 +396,10 @@ function buildShopCards() {
       slides.forEach((slide, i) => slide.classList.toggle('is-visible', i === index));
       current = index;
     }
-
     function start() {
       if (slides.length <= 1 || interval) return;
-      interval = setInterval(() => {
-        show((current + 1) % slides.length);
-      }, 1200);
+      interval = setInterval(() => show((current + 1) % slides.length), 1200);
     }
-
     function stop() {
       if (!interval) return;
       clearInterval(interval);
@@ -352,12 +413,22 @@ function buildShopCards() {
   });
 }
 
+// ── PAGE PRODUIT ──────────────────────────────────────────────────────────────
+function navigateToProduct(slug) {
+  if (SLUG_TO_PAGE[slug]) location.href = SLUG_TO_PAGE[slug];
+}
+
 function buildProductPage() {
   const page = document.querySelector('.product-page-template');
   if (!page) return;
   const slug = page.dataset.product;
   const product = PRODUCTS[slug];
   if (!product) return;
+
+  const category = product.category;
+  const isBeige = slug.includes('beige');
+  const altSlug = isBeige ? `${category}-gray` : `${category}-beige`;
+
   page.innerHTML = `
     <div class="product-page">
       <div class="product-wrap">
@@ -393,19 +464,23 @@ function buildProductPage() {
           <div class="product-info-box">
             <h1 class="product-title">${product.title}</h1>
             <div class="product-color">${product.color}</div>
+            <div class="color-switcher">
+              <button class="color-btn ${isBeige ? 'active' : ''}" onclick="navigateToProduct('${category}-beige')">Beige</button>
+              <button class="color-btn ${!isBeige ? 'active' : ''}" onclick="navigateToProduct('${category}-gray')">Gris</button>
+            </div>
             <div class="product-price-box">${product.price}</div>
             <div class="product-description">${PRODUCT_DESCRIPTION}</div>
-          <div class="product-actions">
-            <button class="btn btn-primary" type="button" onclick="buyNow('${slug}')">Acheter</button>
-            <button class="btn btn-secondary" type="button" onclick="addToCart('${slug}')">Ajouter au panier</button>
+            <div class="product-actions">
+              <button class="btn btn-primary" type="button" onclick="buyNow('${slug}')">Acheter</button>
+              <button class="btn btn-secondary" type="button" onclick="addToCart('${slug}')">Ajouter au panier</button>
+            </div>
+            <a class="back-link" href="shop.html">Retour à la boutique</a>
           </div>
-          <a class="back-link" href="shop.html">Retour à la boutique</a>
         </div>
       </div>
     </div>
   `;
 }
-
 
 function initProductSliders() {
   Object.keys(PRODUCTS).forEach(slug => {
@@ -423,14 +498,11 @@ function initProductSliders() {
       thumbs.forEach((thumb, i) => thumb.classList.toggle('active', i === index));
       current = index;
     }
-
     function next() { update((current + 1) % slides.length); }
     function prev() { update((current - 1 + slides.length) % slides.length); }
 
     slider.querySelectorAll('.product-arrow').forEach(btn => {
-      btn.addEventListener('click', () => {
-        btn.dataset.dir === 'next' ? next() : prev();
-      });
+      btn.addEventListener('click', () => btn.dataset.dir === 'next' ? next() : prev());
     });
 
     dots.forEach(dot => dot.addEventListener('click', () => update(Number(dot.dataset.index))));
@@ -442,9 +514,7 @@ function initProductSliders() {
       e.deltaY > 0 ? next() : prev();
     }, { passive: false });
 
-    slider.addEventListener('touchstart', e => {
-      touchStartY = e.changedTouches[0].clientY;
-    }, { passive: true });
+    slider.addEventListener('touchstart', e => { touchStartY = e.changedTouches[0].clientY; }, { passive: true });
     slider.addEventListener('touchend', e => {
       const delta = touchStartY - e.changedTouches[0].clientY;
       if (Math.abs(delta) < 30) return;
@@ -460,20 +530,96 @@ function initProductSliders() {
   });
 }
 
+// ── MENU ──────────────────────────────────────────────────────────────────────
 function openMenu() { document.getElementById('menuOverlay').classList.add('open'); }
 function closeMenu() { document.getElementById('menuOverlay').classList.remove('open'); }
 
+// ── AUTH ──────────────────────────────────────────────────────────────────────
 function getUsers() { return JSON.parse(localStorage.getItem(STORAGE_USERS) || '[]'); }
 function saveUsers(users) { localStorage.setItem(STORAGE_USERS, JSON.stringify(users)); }
 function getCurrentUser() { return JSON.parse(localStorage.getItem(STORAGE_SESSION) || 'null'); }
 function saveCurrentUser(user) { localStorage.setItem(STORAGE_SESSION, JSON.stringify(user)); }
 function getInitial(value) { return value && value.trim() ? value.trim().charAt(0).toUpperCase() : ''; }
 function getUserLetters(user) { return `${getInitial(user.firstName)} ${getInitial(user.lastName)}`.trim(); }
+
 function showMessage(elementId, text, type) {
   const el = document.getElementById(elementId);
   if (!el) return;
   el.textContent = text;
   el.className = `auth-message ${type}`;
+}
+
+// ── HEADER LOGO ───────────────────────────────────────────────────────────────
+function injectLogo() {
+  const headerLeft = document.querySelector('.header-left');
+  if (!headerLeft) return;
+  headerLeft.innerHTML = `
+    <a href="index.html" class="header-logo-link">
+      <img src="images/logo.svg" alt="Studio of Beauty" class="header-logo-img">
+    </a>
+  `;
+}
+
+// ── SPLASH SCREEN ─────────────────────────────────────────────────────────────
+function initSplashScreen() {
+  const splash = document.createElement('div');
+  splash.className = 'sob-splash';
+  splash.innerHTML = `<img src="images/logo.svg" alt="Studio of Beauty" class="sob-splash-logo">`;
+  document.body.appendChild(splash);
+  setTimeout(() => {
+    splash.classList.add('sob-splash-out');
+    setTimeout(() => splash.remove(), 600);
+  }, 900);
+}
+
+// ── MENU DÉROULANT PROFIL ─────────────────────────────────────────────────────
+function toggleProfileDropdown() {
+  const existing = document.querySelector('.profile-dropdown');
+  if (existing) { existing.remove(); return; }
+
+  const user = getCurrentUser();
+  const accountIcon = document.getElementById('accountIcon');
+  if (!accountIcon) return;
+
+  const dropdown = document.createElement('div');
+  dropdown.className = 'profile-dropdown';
+  dropdown.innerHTML = `
+    <div class="profile-dd-header">
+      <div class="profile-dd-avatar">${user ? getUserLetters(user) : '?'}</div>
+      <div>
+        <div class="profile-dd-name">${user ? `${user.firstName} ${user.lastName}` : ''}</div>
+        <div class="profile-dd-email">${user ? user.email : ''}</div>
+      </div>
+    </div>
+    <a href="mes-commandes.html" class="profile-dd-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Mes commandes
+    </a>
+    <a href="mon-profil.html" class="profile-dd-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.58-7 8-7s8 3 8 7"/></svg>
+      Mon profil
+    </a>
+    <a href="mes-carnets.html" class="profile-dd-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+      Mes carnets
+    </a>
+    <button class="profile-dd-item profile-dd-logout" onclick="logout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Se déconnecter
+    </button>
+  `;
+
+  accountIcon.style.position = 'relative';
+  accountIcon.appendChild(dropdown);
+
+  setTimeout(() => {
+    document.addEventListener('click', function closeDD(e) {
+      if (!accountIcon.contains(e.target)) {
+        dropdown.remove();
+        document.removeEventListener('click', closeDD);
+      }
+    });
+  }, 0);
 }
 
 function updateHeaderAccount() {
@@ -490,7 +636,6 @@ function updateHeaderAccount() {
     avatar.classList.remove('visible');
     svg.style.display = 'block';
   }
-  updateAccountPanel();
 }
 
 function updateAccountPanel() {
@@ -521,8 +666,9 @@ function updateAccountPanel() {
 }
 
 function goToAccount() {
-  if (getCurrentUser()) {
-    location.href = 'account.html';
+  const user = getCurrentUser();
+  if (user) {
+    toggleProfileDropdown();
   } else {
     location.href = 'signup.html';
   }
@@ -541,6 +687,7 @@ function togglePassword(inputId, button) {
   button.textContent = hidden ? '🙈' : '👁';
 }
 
+// ── FAQ / CONTACT ─────────────────────────────────────────────────────────────
 function toggleFaq() { document.getElementById('faqPanel').classList.toggle('visible'); }
 function closeFaq() { document.getElementById('faqPanel').classList.remove('visible'); }
 function toggleContactBubble() {
@@ -552,6 +699,238 @@ function closeContactBubble() {
   if (el) el.classList.remove('visible');
 }
 
+// ── PAGE MES COMMANDES ────────────────────────────────────────────────────────
+function buildMesCommandesPage() {
+  const page = document.querySelector('.mes-commandes-template');
+  if (!page) return;
+  const orders = getOrders();
+
+  if (!orders.length) {
+    page.innerHTML = `
+      <div class="account-page">
+        <h1>Mes commandes</h1>
+        <p class="account-empty">Vous n'avez pas encore passé de commande.</p>
+        <a href="shop.html" class="back-to-home">Voir la boutique</a>
+      </div>`;
+    return;
+  }
+
+  page.innerHTML = `
+    <div class="account-page">
+      <h1>Mes commandes</h1>
+      <div class="orders-list">
+        ${orders.map(order => `
+          <div class="order-card">
+            <div class="order-card-header">
+              <span class="order-card-date">${formatReviewDate(order.createdAt)}</span>
+              <span class="order-card-total">${order.total.toFixed(2).replace('.', ',')} €</span>
+            </div>
+            <div class="order-card-items">
+              ${order.items.map(item => `
+                <div class="order-card-item">
+                  <img src="${item.image || 'images/placeholder.svg'}" alt="${item.title}">
+                  <div>
+                    <div class="order-item-title">${item.title}</div>
+                    <div class="order-item-qty">x${item.quantity} — ${item.price}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+}
+
+// ── PAGE MES CARNETS ──────────────────────────────────────────────────────────
+function buildMesCarnetsPage() {
+  const page = document.querySelector('.mes-carnets-template');
+  if (!page) return;
+  const user = getCurrentUser();
+  const orders = getOrders();
+
+  const slugsSeen = new Set();
+  const uniqueItems = [];
+  orders.forEach(order => {
+    order.items.forEach(item => {
+      if (!slugsSeen.has(item.slug)) {
+        slugsSeen.add(item.slug);
+        uniqueItems.push(item);
+      }
+    });
+  });
+
+  if (!uniqueItems.length) {
+    page.innerHTML = `
+      <div class="account-page">
+        <h1>Mes carnets</h1>
+        <p class="account-empty">Vous n'avez pas encore acheté de carnet.</p>
+        <a href="shop.html" class="back-to-home">Voir la boutique</a>
+      </div>`;
+    return;
+  }
+
+  page.innerHTML = `
+    <div class="account-page">
+      <h1>Mes carnets</h1>
+      <p class="account-sub">Vos carnets ont été envoyés par email lors de l'achat. Vous pouvez les renvoyer ci-dessous.</p>
+      <div class="carnets-list">
+        ${uniqueItems.map(item => `
+          <div class="carnet-card">
+            <img src="${item.image || 'images/placeholder.svg'}" alt="${item.title}">
+            <div class="carnet-card-info">
+              <div class="carnet-card-title">${item.title}</div>
+              <button class="carnet-resend-btn" data-slug="${item.slug}">Renvoyer par email</button>
+              <span class="carnet-resend-status" id="status-${item.slug}"></span>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>`;
+
+  page.querySelectorAll('.carnet-resend-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const slug = btn.dataset.slug;
+      const status = document.getElementById(`status-${slug}`);
+      btn.disabled = true;
+      btn.textContent = 'Envoi...';
+      try {
+        await apiPost('/api/resend-carnet', { email: user.email, slug });
+        btn.textContent = 'Envoyé !';
+        if (status) status.textContent = `✓ Envoyé à ${user.email}`;
+      } catch (err) {
+        btn.textContent = 'Renvoyer par email';
+        btn.disabled = false;
+        if (status) status.textContent = 'Erreur, réessayez.';
+      }
+    });
+  });
+}
+
+// ── PAGE MON PROFIL ───────────────────────────────────────────────────────────
+const AVATAR_COLORS = [
+  '#f5f0ea', '#e8ddd0', '#d4c8b8', '#c4a882',
+  '#2a2826', '#8a8680', '#b5b2ac', '#dcdad6',
+  '#8f7c91', '#6b8f71', '#8f6b6b', '#6b7a8f'
+];
+
+function buildMonProfilPage() {
+  const page = document.querySelector('.mon-profil-template');
+  if (!page) return;
+  const user = getCurrentUser();
+  if (!user) { location.href = 'signup.html'; return; }
+
+  const avatarColor = user.avatarColor || '#2a2826';
+
+  page.innerHTML = `
+    <div class="account-page">
+      <h1>Mon profil</h1>
+      <div class="profil-grid">
+        <div class="profil-avatar-section">
+          <div class="profil-avatar" id="profilAvatar" style="background:${avatarColor}">
+            ${getUserLetters(user)}
+          </div>
+          <p class="profil-avatar-label">Couleur de l'avatar</p>
+          <div class="avatar-palette">
+            ${AVATAR_COLORS.map(color => `
+              <button class="avatar-color-btn ${color === avatarColor ? 'selected' : ''}"
+                style="background:${color};"
+                data-color="${color}"
+                title="${color}">
+              </button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="profil-forms">
+          <form class="profil-form" id="profilInfoForm">
+            <h2>Informations</h2>
+            <div class="form-row">
+              <label>Prénom</label>
+              <input type="text" id="profilFirstName" value="${user.firstName}" required>
+            </div>
+            <div class="form-row">
+              <label>Nom</label>
+              <input type="text" id="profilLastName" value="${user.lastName}" required>
+            </div>
+            <div class="form-row">
+              <label>Email</label>
+              <input type="email" id="profilEmail" value="${user.email}" required>
+            </div>
+            <div class="auth-message" id="profilInfoMsg"></div>
+            <button type="submit" class="btn btn-primary">Enregistrer</button>
+          </form>
+          <form class="profil-form" id="profilPasswordForm">
+            <h2>Changer le mot de passe</h2>
+            <div class="form-row">
+              <label>Mot de passe actuel</label>
+              <input type="password" id="profilCurrentPwd" required>
+            </div>
+            <div class="form-row">
+              <label>Nouveau mot de passe</label>
+              <input type="password" id="profilNewPwd" required>
+            </div>
+            <div class="auth-message" id="profilPwdMsg"></div>
+            <button type="submit" class="btn btn-primary">Changer</button>
+          </form>
+        </div>
+      </div>
+    </div>`;
+
+  // Avatar color picker
+  page.querySelectorAll('.avatar-color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      page.querySelectorAll('.avatar-color-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      const color = btn.dataset.color;
+      document.getElementById('profilAvatar').style.background = color;
+      const updated = { ...getCurrentUser(), avatarColor: color };
+      saveCurrentUser(updated);
+      updateHeaderAvatarColor(color);
+    });
+  });
+
+  // Info form
+  document.getElementById('profilInfoForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const firstName = document.getElementById('profilFirstName').value.trim();
+    const lastName = document.getElementById('profilLastName').value.trim();
+    const email = document.getElementById('profilEmail').value.trim().toLowerCase();
+    try {
+      await apiPut('/api/profile', { userId: user.id, firstName, lastName, email });
+      const updated = { ...getCurrentUser(), firstName, lastName, email };
+      saveCurrentUser(updated);
+      showMessage('profilInfoMsg', 'Profil mis à jour.', 'success');
+      updateHeaderAccount();
+    } catch (err) {
+      showMessage('profilInfoMsg', err.message, 'error');
+    }
+  });
+
+  // Password form
+  document.getElementById('profilPasswordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const currentPwd = document.getElementById('profilCurrentPwd').value;
+    const newPwd = document.getElementById('profilNewPwd').value;
+    if (newPwd.length < 6) {
+      showMessage('profilPwdMsg', 'Le mot de passe doit contenir au moins 6 caractères.', 'error');
+      return;
+    }
+    try {
+      await apiPut('/api/profile/password', { userId: user.id, currentPassword: currentPwd, newPassword: newPwd });
+      showMessage('profilPwdMsg', 'Mot de passe modifié.', 'success');
+      document.getElementById('profilPasswordForm').reset();
+    } catch (err) {
+      showMessage('profilPwdMsg', err.message, 'error');
+    }
+  });
+}
+
+function updateHeaderAvatarColor(color) {
+  const avatar = document.getElementById('avatarBadge');
+  if (avatar) avatar.style.background = color;
+}
+
+// ── ÉVÉNEMENTS GLOBAUX ────────────────────────────────────────────────────────
 document.addEventListener('click', function(e) {
   const faq = document.getElementById('faqPanel');
   const faqBtn = e.target.closest('footer button');
@@ -599,7 +978,6 @@ if (signupForm) {
       showMessage('signupMessage', 'Le mot de passe doit contenir au moins 6 caractères.', 'error');
       return;
     }
-
     try {
       const data = await apiPost('/api/signup', { firstName, lastName, email, password });
       saveCurrentUser(data.user);
@@ -654,13 +1032,14 @@ if (reviewForm) {
     renderHomeReviews();
     showMessage('reviewMessage', 'Merci pour votre avis.', 'success');
     this.reset();
-    setTimeout(() => {
-      closeReviewModal();
-    }, 700);
+    setTimeout(() => closeReviewModal(), 700);
   });
 }
 
+// ── INIT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  initSplashScreen();
+  injectLogo();
   buildProductPage();
   buildShopCards();
   initProductSliders();
@@ -668,6 +1047,9 @@ window.addEventListener('DOMContentLoaded', () => {
   renderHomeReviews();
   updateCartBadge();
   buildCartPage();
+  buildMesCommandesPage();
+  buildMesCarnetsPage();
+  buildMonProfilPage();
 
   const prefillEmail = localStorage.getItem('sob_prefill_email');
   if (prefillEmail) {
@@ -675,5 +1057,9 @@ window.addEventListener('DOMContentLoaded', () => {
     if (signupEmail) signupEmail.value = prefillEmail;
     localStorage.removeItem('sob_prefill_email');
   }
+
   updateHeaderAccount();
+
+  const user = getCurrentUser();
+  if (user?.avatarColor) updateHeaderAvatarColor(user.avatarColor);
 });

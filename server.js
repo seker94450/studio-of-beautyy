@@ -498,6 +498,63 @@ app.get('/api/checkout/paypal/success', async (req, res) => {
   res.redirect('/cart.html?payment=success');
 });
 
+// ── PROFIL ────────────────────────────────────────────────────────────────────
+app.put('/api/profile', async (req, res) => {
+  const { userId, firstName, lastName, email } = req.body;
+  if (!userId || !firstName || !lastName || !email)
+    return res.status(400).json({ error: 'Champs manquants.' });
+  try {
+    await pool.query(
+      `UPDATE users SET "firstName"=$1, "lastName"=$2, email=$3 WHERE id=$4`,
+      [firstName.trim(), lastName.trim(), email.toLowerCase().trim(), userId]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    if (err.code === '23505') return res.status(400).json({ error: 'Cet email est déjà utilisé.' });
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur.' });
+  }
+});
+
+app.put('/api/profile/password', async (req, res) => {
+  const { userId, currentPassword, newPassword } = req.body;
+  if (!userId || !currentPassword || !newPassword)
+    return res.status(400).json({ error: 'Champs manquants.' });
+  if (newPassword.length < 6)
+    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères.' });
+  try {
+    const result = await pool.query(`SELECT "passwordHash" FROM users WHERE id=$1`, [userId]);
+    const user = result.rows[0];
+    if (!user || !bcrypt.compareSync(currentPassword, user.passwordHash))
+      return res.status(401).json({ error: 'Mot de passe actuel incorrect.' });
+    const newHash = bcrypt.hashSync(newPassword, 10);
+    await pool.query(`UPDATE users SET "passwordHash"=$1 WHERE id=$2`, [newHash, userId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur serveur.' });
+  }
+});
+
+app.post('/api/resend-carnet', async (req, res) => {
+  const { email, slug } = req.body;
+  if (!email || !slug) return res.status(400).json({ error: 'Champs manquants.' });
+  if (!PRODUCT_FILES[slug]) return res.status(400).json({ error: 'Produit introuvable.' });
+  try {
+    const product = {
+      'brow-beige': "L'Essentiel Brow Beige",
+      'brow-gray':  "L'Essentiel Brow Gris",
+      'lash-beige': "L'Essentiel Lash Beige",
+      'lash-gray':  "L'Essentiel Lash Gris"
+    };
+    await sendOrderEmail(email, [{ slug, title: product[slug], price: '8,95 €', quantity: 1 }]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur envoi.' });
+  }
+});
+
 app.use(express.static(path.join(__dirname)));
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 

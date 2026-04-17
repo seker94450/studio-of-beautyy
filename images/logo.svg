@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 200" width="340" height="200">
+
+
+  <!-- Cercle fin décoratif -->
+  <circle cx="170" cy="100" r="62" fill="none" stroke="#c4a882" stroke-width="0.8" opacity="0.7"/>
+  <circle cx="170" cy="100" r="56" fill="none" stroke="#c4a882" stroke-width="0.3" opacity="0.5"/>
+
+  <!-- Petits ornements sur le cercle -->
+  <circle cx="170" cy="38" r="2.5" fill="#c4a882" opacity="0.8"/>
+  <circle cx="170" cy="162" r="2.5" fill="#c4a882" opacity="0.8"/>
+  <circle cx="108" cy="100" r="2.5" fill="#c4a882" opacity="0.8"/>
+  <circle cx="232" cy="100" r="2.5" fill="#c4a882" opacity="0.8"/>
+
+  <!-- "Studio of" en italique élégant -->
+  <text x="170" y="88"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="15"
+    font-style="italic"
+    font-weight="400"
+    fill="#2a2826"
+    text-anchor="middle"
+    letter-spacing="3">Studio of</text>
+
+  <!-- Ligne fine entre les deux textes -->
+  <line x1="118" y1="96" x2="222" y2="96" stroke="#c4a882" stroke-width="0.6" opacity="0.6"/>
+
+  <!-- "BEAUTY" en grandes lettres espacées -->
+  <text x="167" y="123"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="26"
+    font-weight="400"
+    fill="#2a2826"
+    text-anchor="middle"
+    textLength="180"
+    lengthAdjust="spacing">BEAUTY</text>
+
+</svg>
