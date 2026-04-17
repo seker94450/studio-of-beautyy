@@ -257,6 +257,12 @@ function buildCartPage() {
             </div>
           </div>
         </button>
+        <button class="btn-checkout btn-checkout-sepa" type="button" onclick="checkoutSepa()">
+          <div class="btn-checkout-inner">
+            <div class="btn-checkout-title">Payer par virement</div>
+            <div class="sepa-label">SEPA Direct Debit</div>
+          </div>
+        </button>
         <button class="btn-checkout btn-checkout-paypal" type="button" onclick="checkoutPaypal()">
           <div class="btn-checkout-inner">
             <div class="btn-checkout-title" style="color:#003087;">Payer avec</div>
@@ -339,6 +345,105 @@ async function checkoutStripe() {
       }
 
       if (paymentIntent.status === 'succeeded') {
+        await apiPost('/api/checkout/stripe/after-payment', { paymentIntentId: paymentIntent.id });
+        overlay.remove();
+        saveOrder(cart, total);
+        localStorage.removeItem(STORAGE_CART);
+        window.location.href = 'cart.html?payment=success';
+      }
+    });
+  } catch (err) {
+    overlay.remove();
+    alert(err.message);
+  }
+}
+
+async function checkoutSepa() {
+  const cart = getCart();
+  if (!cart.length) return;
+  const user = getCurrentUser();
+
+  const total = cart.reduce((sum, i) => sum + parseFloat(formatPrice(i.price)) * i.quantity, 0);
+  const totalStr = total.toFixed(2).replace('.', ',') + ' €';
+
+  const overlay = document.createElement('div');
+  overlay.className = 'stripe-overlay';
+  overlay.innerHTML = `
+    <div class="stripe-modal">
+      <button class="stripe-modal-close" id="sepaClose">×</button>
+      <div class="stripe-modal-header">
+        <div class="stripe-modal-title">Paiement par virement SEPA</div>
+        <div class="stripe-modal-amount">${totalStr}</div>
+      </div>
+      <div class="sepa-info">Le montant sera prélevé sur votre compte sous <strong>3 à 5 jours ouvrables</strong>. Vous recevrez votre carnet par email dès confirmation.</div>
+      <div class="form-row">
+        <label>Nom complet</label>
+        <input type="text" id="sepaName" placeholder="Votre nom et prénom" value="${user ? user.firstName + ' ' + user.lastName : ''}">
+      </div>
+      <div class="form-row">
+        <label>IBAN</label>
+        <div id="sepaIbanEl" class="stripe-card-el"></div>
+      </div>
+      <label class="sepa-mandate">
+        <input type="checkbox" id="sepaMandate">
+        <span>J'autorise Studio of Beauty à prélever ce montant sur mon compte. Ce mandat est soumis aux règles SEPA.</span>
+      </label>
+      <div class="stripe-error" id="sepaError"></div>
+      <button class="stripe-pay-btn" id="sepaPayBtn">Autoriser le prélèvement — ${totalStr}</button>
+      <div class="stripe-secure">🔒 Sécurisé par Stripe · SEPA Direct Debit</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  document.getElementById('sepaClose').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  try {
+    const data = await apiPost('/api/checkout/stripe/sepa-intent', { items: cart, userEmail: user?.email || '' });
+    const stripe = Stripe(data.publishableKey);
+    const elements = stripe.elements();
+    const iban = elements.create('iban', {
+      supportedCountries: ['SEPA'],
+      style: {
+        base: {
+          fontFamily: "'Jost', sans-serif",
+          fontSize: '15px',
+          color: '#2a2826',
+          '::placeholder': { color: '#aaa9a7' }
+        },
+        invalid: { color: '#c0392b' }
+      }
+    });
+    iban.mount('#sepaIbanEl');
+
+    document.getElementById('sepaPayBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('sepaPayBtn');
+      const errEl = document.getElementById('sepaError');
+      const name = document.getElementById('sepaName').value.trim();
+      const mandate = document.getElementById('sepaMandate').checked;
+
+      if (!name) { errEl.textContent = 'Veuillez entrer votre nom complet.'; return; }
+      if (!mandate) { errEl.textContent = 'Veuillez accepter le mandat de prélèvement.'; return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Traitement…';
+      errEl.textContent = '';
+
+      const { error, paymentIntent } = await stripe.confirmSepaDebitPayment(data.clientSecret, {
+        payment_method: {
+          sepa_debit: iban,
+          billing_details: { name, email: user?.email || '' }
+        }
+      });
+
+      if (error) {
+        errEl.textContent = error.message;
+        btn.disabled = false;
+        btn.textContent = `Autoriser le prélèvement — ${totalStr}`;
+        return;
+      }
+
+      if (paymentIntent.status === 'processing' || paymentIntent.status === 'succeeded') {
         await apiPost('/api/checkout/stripe/after-payment', { paymentIntentId: paymentIntent.id });
         overlay.remove();
         saveOrder(cart, total);

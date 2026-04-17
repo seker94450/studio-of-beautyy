@@ -413,6 +413,36 @@ app.post('/api/checkout/stripe/after-payment', async (req, res) => {
   }
 });
 
+// ── STRIPE SEPA DIRECT DEBIT ──────────────────────────────────────────────────
+app.post('/api/checkout/stripe/sepa-intent', async (req, res) => {
+  if (!stripe) return res.status(503).json({ error: 'Stripe non configuré.' });
+  const { items, userEmail } = req.body;
+  if (!items || !items.length) return res.status(400).json({ error: 'Panier vide.' });
+
+  const amount = items.reduce((sum, item) => {
+    return sum + Math.round(parseFloat(item.price.replace(',', '.').replace(/[^0-9.]/g, '')) * 100) * item.quantity;
+  }, 0);
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: 'eur',
+      payment_method_types: ['sepa_debit'],
+      metadata: {
+        userEmail: userEmail || '',
+        items: JSON.stringify(items.map(i => ({ slug: i.slug, title: i.title, price: i.price, quantity: i.quantity })))
+      }
+    });
+    res.json({
+      clientSecret: paymentIntent.client_secret,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || ''
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur Stripe SEPA.' });
+  }
+});
+
 // ── STRIPE CHECKOUT (conservé pour compatibilité) ──────────────────────────────
 app.post('/api/checkout/stripe', async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'Stripe non configuré.' });
