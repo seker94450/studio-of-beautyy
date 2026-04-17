@@ -205,7 +205,7 @@ function buildCartPage() {
       saveOrder(cartToSave, total);
     }
     localStorage.removeItem(STORAGE_CART);
-    page.innerHTML = '<div class="cart-empty">Merci pour votre achat ! Vous recevrez votre carnet par e-mail.<br><small style="color:#999;font-size:13px;">⚠️ Si vous ne voyez pas l\'email, vérifiez vos spams et ajoutez studioofbeautyy@gmail.com à vos contacts.</small></div><a href="index.html" class="back-to-home">Retour à l\'accueil</a>';
+    page.innerHTML = '<div class="cart-empty">Merci pour votre achat ! Vous recevrez votre carnet par e-mail.<br><br>Si vous ne le recevez pas, pensez à vérifier vos spams.</div><a href="index.html" class="back-to-home">Retour à l\'accueil</a>';
     return;
   }
 
