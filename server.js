@@ -399,7 +399,7 @@ app.post('/api/checkout/stripe/after-payment', async (req, res) => {
   if (!paymentIntentId || !stripe) return res.status(400).json({ error: 'ID manquant.' });
   try {
     const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    if (intent.status === 'succeeded') {
+    if (intent.status === 'succeeded' || intent.status === 'processing') {
       const userEmail = intent.metadata?.userEmail;
       const items = intent.metadata?.items ? JSON.parse(intent.metadata.items) : [];
       if (userEmail) await sendOrderEmail(userEmail, items);

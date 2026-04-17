@@ -450,11 +450,17 @@ async function checkoutSepa() {
       }
 
       if (paymentIntent.status === 'processing' || paymentIntent.status === 'succeeded') {
-        await apiPost('/api/checkout/stripe/after-payment', { paymentIntentId: paymentIntent.id });
+        try {
+          await apiPost('/api/checkout/stripe/after-payment', { paymentIntentId: paymentIntent.id });
+        } catch (e) { /* email non bloquant */ }
         overlay.remove();
         saveOrder(cart, total);
         localStorage.removeItem(STORAGE_CART);
         window.location.href = 'cart.html?payment=success';
+      } else {
+        errEl.textContent = 'Statut inattendu : ' + paymentIntent.status;
+        btn.disabled = false;
+        btn.textContent = `Autoriser le prélèvement — ${totalStr}`;
       }
     });
   } catch (err) {
