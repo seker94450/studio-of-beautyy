@@ -106,21 +106,13 @@ async function sendOrderEmail(toEmail, items) {
   }
   sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-  // Liens de téléchargement sécurisés pour les carnets (fichiers lourds)
-  const tokens = await createProductDownloadTokens(toEmail, items);
-
   const productListHtml = items.map(i =>
     `<tr><td style="padding:8px 0;border-bottom:1px solid #ece9e4;">${i.title}</td><td style="padding:8px 0;border-bottom:1px solid #ece9e4;text-align:right;">x${i.quantity} — ${i.price}</td></tr>`
   ).join('');
 
-  const downloadLinksHtml = tokens.map(t =>
-    `<a href="${SITE_URL}/api/download/${t.token}" style="display:block;margin:10px 0;padding:12px 20px;background:#2a2826;color:#fff;text-decoration:none;border-radius:6px;font-size:14px;text-align:center;">
-      Télécharger — ${t.label}
-    </a>`
-  ).join('');
-
-  // Guide en pièce jointe
+  // Pièces jointes : guide + carnets achetés
   const attachments = [];
+
   if (fs.existsSync(GUIDE_FILE)) {
     attachments.push({
       content: fs.readFileSync(GUIDE_FILE).toString('base64'),
@@ -130,6 +122,24 @@ async function sendOrderEmail(toEmail, items) {
     });
   } else {
     console.warn('[Email] Guide introuvable :', GUIDE_FILE);
+  }
+
+  const slugsAdded = new Set();
+  for (const item of items) {
+    const slug = item.slug;
+    if (slugsAdded.has(slug) || !PRODUCT_FILES[slug]) continue;
+    const filePath = path.join(__dirname, 'files', PRODUCT_FILES[slug]);
+    if (fs.existsSync(filePath)) {
+      attachments.push({
+        content: fs.readFileSync(filePath).toString('base64'),
+        filename: PRODUCT_FILES[slug],
+        type: 'application/pdf',
+        disposition: 'attachment'
+      });
+    } else {
+      console.warn('[Email] Carnet introuvable :', filePath);
+    }
+    slugsAdded.add(slug);
   }
 
   const html = `<!DOCTYPE html>
@@ -143,15 +153,11 @@ async function sendOrderEmail(toEmail, items) {
     <div style="padding:36px 40px;color:#2a2826;">
       <h2 style="font-weight:400;font-size:22px;margin:0 0 12px;">Merci pour votre commande&nbsp;!</h2>
       <p style="color:#666;font-size:15px;line-height:1.6;margin:0 0 24px;">
-        Le guide d'utilisation est joint à cet email.<br>
-        Vos carnets sont disponibles via les liens ci-dessous (valables <strong>72 heures</strong>).
+        Votre carnet digital ainsi que le guide d'utilisation sont joints à cet email en pièce jointe.
       </p>
       <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:28px;">
         ${productListHtml}
       </table>
-      <div style="margin:0 0 28px;">
-        ${downloadLinksHtml}
-      </div>
       <p style="font-size:13px;color:#999;margin:0;">
         Une question ? Écrivez-nous à
         <a href="mailto:studioofbeautyy@gmail.com" style="color:#2a2826;">studioofbeautyy@gmail.com</a>
@@ -332,6 +338,19 @@ app.get('/api/test-email', async (req, res) => {
   } catch (err) {
     console.error('[Test email] Erreur :', err.response?.body || err.message);
     res.status(500).json({ error: err.message, details: err.response?.body?.errors });
+  }
+});
+
+// ── TEST COMMANDE EMAIL ───────────────────────────────────────────────────────
+app.get('/api/test-order-email', async (req, res) => {
+  const to = req.query.to;
+  const slug = req.query.slug || 'brow-beige';
+  if (!to) return res.status(400).json({ error: 'Paramètre ?to=email manquant' });
+  try {
+    await sendOrderEmail(to, [{ slug, title: 'L\'Essentiel Brow Beige', price: '8,95 €', quantity: 1 }]);
+    res.json({ success: true, message: `Email de commande envoyé à ${to} avec le carnet ${slug}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
