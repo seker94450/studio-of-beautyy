@@ -185,49 +185,89 @@ main { padding-top: var(--header-h); }
   flex-wrap: wrap;
 }
 .btn-checkout {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
   border: none;
-  border-radius: 14px;
+  border-radius: 16px;
   cursor: pointer;
-  padding: 0.9rem 1.4rem;
+  padding: 1rem 1.6rem;
   font-family: 'Jost', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   transition: box-shadow 0.2s ease, transform 0.15s ease;
-  min-width: 200px;
+  min-width: 210px;
 }
-.btn-checkout:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.13);
+.btn-checkout:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.14); }
+.btn-checkout:active { transform: translateY(0); }
+.btn-checkout-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
 }
-.btn-checkout:active {
-  transform: translateY(0);
+.btn-checkout-title {
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 400;
+  opacity: 0.7;
 }
 .btn-checkout-card {
   background: #fff;
-  color: #1a1a1a;
-  border: 1px solid rgba(0,0,0,0.1);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  border: 1px solid rgba(0,0,0,0.09);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
 }
-.btn-checkout-label {
-  white-space: nowrap;
-}
-.btn-checkout-logos {
+.btn-checkout-cards {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.5rem;
 }
-.btn-checkout-paypal {
-  background: #ffc439;
-  box-shadow: 0 2px 8px rgba(255,196,57,0.3);
-  min-width: 180px;
+.pay-badge {
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  height: 26px;
+  border-radius: 5px;
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
 }
+.pay-badge-cb {
+  background: #1a1a2e;
+  color: #fff;
+  padding: 0 8px;
+  font-family: Arial, sans-serif;
+}
+.pay-badge-visa {
+  background: #1a1f71;
+  color: #fff;
+  padding: 0 8px;
+  font-family: Arial, sans-serif;
+  font-style: italic;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+}
+.pay-badge-mc {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  width: 36px;
+  height: 26px;
+}
+.mc-left, .mc-right {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  position: absolute;
+}
+.mc-left { background: #eb001b; left: 0; }
+.mc-right { background: #f79e1b; left: 10px; mix-blend-mode: multiply; }
+.btn-checkout-paypal {
+  background: linear-gradient(135deg, #ffc439 0%, #f5a623 100%);
+  box-shadow: 0 4px 14px rgba(255,196,57,0.4);
+}
+.paypal-logo {
+  font-family: Arial, sans-serif;
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.pp-pay { color: #003087; }
+.pp-pal { color: #009cde; }
 .cart-page {
   padding: 4rem 2rem 6rem;
   max-width: 1080px;
