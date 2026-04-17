@@ -1677,3 +1677,72 @@ footer a:hover, footer button:hover { color: rgba(255,255,255,0.6); }
   .profil-grid { grid-template-columns: 1fr; }
   .sob-toast { width: calc(100vw - 2rem); flex-direction: column; border-radius: 16px; text-align: center; }
 }
+
+/* ── STRIPE MODAL ────────────────────────────────────────────────────────────── */
+.stripe-overlay {
+  position: fixed; inset: 0;
+  background: rgba(42,40,38,0.55);
+  backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 9999;
+  animation: toastIn 0.25s ease;
+}
+.stripe-modal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 2rem 2rem 1.6rem;
+  width: min(420px, calc(100vw - 2rem));
+  box-shadow: 0 30px 80px rgba(0,0,0,0.22);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+.stripe-modal-close {
+  position: absolute; top: 1rem; right: 1.2rem;
+  background: none; border: none; font-size: 1.5rem;
+  color: var(--gray-dark); cursor: pointer; line-height: 1;
+}
+.stripe-modal-header { display: flex; justify-content: space-between; align-items: center; }
+.stripe-modal-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.4rem; font-weight: 400; letter-spacing: 0.06em;
+}
+.stripe-modal-amount {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.3rem; color: var(--text-dark);
+}
+.stripe-card-el {
+  border: 1px solid var(--gray-mid);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  background: var(--white);
+}
+.stripe-error {
+  font-size: 0.78rem;
+  color: var(--danger);
+  min-height: 1rem;
+  letter-spacing: 0.04em;
+}
+.stripe-pay-btn {
+  background: var(--text-dark);
+  color: var(--white);
+  border: none;
+  border-radius: 999px;
+  padding: 0.9rem 1.4rem;
+  font-family: 'Jost', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.stripe-pay-btn:hover { opacity: 0.88; }
+.stripe-pay-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.stripe-secure {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--gray-dark);
+  letter-spacing: 0.08em;
+}

@@ -365,7 +365,55 @@ app.get('/api/test-order-email', async (req, res) => {
   }
 });
 
-// ── STRIPE ────────────────────────────────────────────────────────────────────
+// ── STRIPE ELEMENTS ───────────────────────────────────────────────────────────
+app.post('/api/checkout/stripe/intent', async (req, res) => {
+  if (!stripe) return res.status(503).json({ error: 'Stripe non configuré.' });
+  const { items, userEmail } = req.body;
+  if (!items || !items.length) return res.status(400).json({ error: 'Panier vide.' });
+
+  const amount = items.reduce((sum, item) => {
+    return sum + Math.round(parseFloat(item.price.replace(',', '.').replace(/[^0-9.]/g, '')) * 100) * item.quantity;
+  }, 0);
+
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount,
+      currency: 'eur',
+      metadata: {
+        userEmail: userEmail || '',
+        items: JSON.stringify(items.map(i => ({ slug: i.slug, title: i.title, price: i.price, quantity: i.quantity })))
+      }
+    });
+    res.json({
+      clientSecret: paymentIntent.client_secret,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || ''
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur Stripe.' });
+  }
+});
+
+app.post('/api/checkout/stripe/after-payment', async (req, res) => {
+  const { paymentIntentId } = req.body;
+  if (!paymentIntentId || !stripe) return res.status(400).json({ error: 'ID manquant.' });
+  try {
+    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (intent.status === 'succeeded') {
+      const userEmail = intent.metadata?.userEmail;
+      const items = intent.metadata?.items ? JSON.parse(intent.metadata.items) : [];
+      if (userEmail) await sendOrderEmail(userEmail, items);
+      res.json({ success: true });
+    } else {
+      res.status(400).json({ error: 'Paiement non confirmé.' });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erreur.' });
+  }
+});
+
+// ── STRIPE CHECKOUT (conservé pour compatibilité) ──────────────────────────────
 app.post('/api/checkout/stripe', async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'Stripe non configuré.' });
   const { items, userEmail } = req.body;

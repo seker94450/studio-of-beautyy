@@ -278,10 +278,76 @@ async function checkoutStripe() {
   const cart = getCart();
   if (!cart.length) return;
   const user = getCurrentUser();
+
+  const total = cart.reduce((sum, i) => sum + parseFloat(formatPrice(i.price)) * i.quantity, 0);
+  const totalStr = total.toFixed(2).replace('.', ',') + ' €';
+
+  // Modale paiement
+  const overlay = document.createElement('div');
+  overlay.className = 'stripe-overlay';
+  overlay.innerHTML = `
+    <div class="stripe-modal">
+      <button class="stripe-modal-close" id="stripeClose">×</button>
+      <div class="stripe-modal-header">
+        <div class="stripe-modal-title">Paiement sécurisé</div>
+        <div class="stripe-modal-amount">${totalStr}</div>
+      </div>
+      <div id="stripeCardEl" class="stripe-card-el"></div>
+      <div class="stripe-error" id="stripeError"></div>
+      <button class="stripe-pay-btn" id="stripePayBtn">Payer ${totalStr}</button>
+      <div class="stripe-secure">🔒 Sécurisé par Stripe</div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  document.getElementById('stripeClose').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
   try {
-    const data = await apiPost('/api/checkout/stripe', { items: cart, userEmail: user?.email || '' });
-    window.location.href = data.url;
+    const data = await apiPost('/api/checkout/stripe/intent', { items: cart, userEmail: user?.email || '' });
+    const stripe = Stripe(data.publishableKey);
+    const elements = stripe.elements();
+    const card = elements.create('card', {
+      style: {
+        base: {
+          fontFamily: "'Jost', sans-serif",
+          fontSize: '15px',
+          color: '#2a2826',
+          '::placeholder': { color: '#aaa9a7' }
+        },
+        invalid: { color: '#c0392b' }
+      }
+    });
+    card.mount('#stripeCardEl');
+
+    document.getElementById('stripePayBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('stripePayBtn');
+      const errEl = document.getElementById('stripeError');
+      btn.disabled = true;
+      btn.textContent = 'Traitement…';
+      errEl.textContent = '';
+
+      const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
+        payment_method: { card, billing_details: { email: user?.email || '' } }
+      });
+
+      if (error) {
+        errEl.textContent = error.message;
+        btn.disabled = false;
+        btn.textContent = `Payer ${totalStr}`;
+        return;
+      }
+
+      if (paymentIntent.status === 'succeeded') {
+        await apiPost('/api/checkout/stripe/after-payment', { paymentIntentId: paymentIntent.id });
+        overlay.remove();
+        saveOrder(cart, total);
+        localStorage.removeItem(STORAGE_CART);
+        window.location.href = 'cart.html?payment=success';
+      }
+    });
   } catch (err) {
+    overlay.remove();
     alert(err.message);
   }
 }
