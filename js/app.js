@@ -561,15 +561,35 @@ function injectLogo() {
 }
 
 // ── SPLASH SCREEN ─────────────────────────────────────────────────────────────
-function initSplashScreen() {
+function showSplash(duration = 600) {
+  const existing = document.querySelector('.sob-splash');
+  if (existing) return;
   const splash = document.createElement('div');
   splash.className = 'sob-splash';
   splash.innerHTML = `<img src="images/logo.svg" alt="Studio of Beauty" class="sob-splash-logo">`;
   document.body.appendChild(splash);
   setTimeout(() => {
     splash.classList.add('sob-splash-out');
-    setTimeout(() => splash.remove(), 600);
-  }, 900);
+    setTimeout(() => splash.remove(), 500);
+  }, duration);
+}
+
+function initSplashScreen() {
+  // Splash rapide à l'arrivée sur la page (continuité visuelle)
+  showSplash(350);
+}
+
+function initPageTransitions() {
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a[href]');
+    if (!link) return;
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('http') || href.startsWith('#') || href.startsWith('javascript') || href.startsWith('mailto') || href.startsWith('tel')) return;
+    if (link.target === '_blank') return;
+    e.preventDefault();
+    showSplash(600);
+    setTimeout(() => { window.location.href = href; }, 400);
+  });
 }
 
 // ── MENU DÉROULANT PROFIL ─────────────────────────────────────────────────────
@@ -1039,6 +1059,7 @@ if (reviewForm) {
 // ── INIT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   initSplashScreen();
+  initPageTransitions();
   injectLogo();
   buildProductPage();
   buildShopCards();
