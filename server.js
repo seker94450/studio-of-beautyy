@@ -326,40 +326,6 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
   }
 });
 
-// ── TEST EMAIL ────────────────────────────────────────────────────────────────
-app.get('/api/test-email', async (req, res) => {
-  const to = req.query.to;
-  if (!to) return res.status(400).json({ error: 'Paramètre ?to=email manquant' });
-  if (!process.env.SENDGRID_API_KEY) {
-    return res.status(503).json({ error: 'SENDGRID_API_KEY non configuré' });
-  }
-  try {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    await sgMail.send({
-      from: { name: 'Studio of Beauty', email: process.env.SENDGRID_FROM || 'studioofbeautyy@gmail.com' },
-      to,
-      subject: 'Test email Studio of Beauty',
-      text: 'Si vous recevez cet email, la configuration fonctionne !'
-    });
-    res.json({ success: true, message: `Email envoyé à ${to}` });
-  } catch (err) {
-    console.error('[Test email] Erreur :', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ── TEST COMMANDE EMAIL ───────────────────────────────────────────────────────
-app.get('/api/test-order-email', async (req, res) => {
-  const to = req.query.to;
-  const slug = req.query.slug || 'brow-beige';
-  if (!to) return res.status(400).json({ error: 'Paramètre ?to=email manquant' });
-  try {
-    await sendOrderEmail(to, [{ slug, title: 'L\'Essentiel Brow Beige', price: '8,95 €', quantity: 1 }]);
-    res.json({ success: true, message: `Email de commande envoyé à ${to} avec le carnet ${slug}` });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // ── STRIPE ELEMENTS ───────────────────────────────────────────────────────────
 app.post('/api/checkout/stripe/intent', async (req, res) => {
@@ -499,7 +465,7 @@ app.get('/api/checkout/stripe/success', async (req, res) => {
 // ── PAYPAL ────────────────────────────────────────────────────────────────────
 async function getPaypalToken() {
   const creds = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString('base64');
-  const resp = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
+  const resp = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
     method: 'POST',
     headers: { 'Authorization': `Basic ${creds}`, 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'grant_type=client_credentials'
@@ -519,7 +485,7 @@ app.post('/api/checkout/paypal', async (req, res) => {
 
   try {
     const token = await getPaypalToken();
-    const resp = await fetch('https://api-m.sandbox.paypal.com/v2/checkout/orders', {
+    const resp = await fetch('https://api-m.paypal.com/v2/checkout/orders', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -552,7 +518,7 @@ app.get('/api/checkout/paypal/success', async (req, res) => {
 
   try {
     const accessToken = await getPaypalToken();
-    const captureResp = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`, {
+    const captureResp = await fetch(`https://api-m.paypal.com/v2/checkout/orders/${orderId}/capture`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${accessToken}`, 'Content-Type': 'application/json' }
     });
