@@ -25,6 +25,12 @@ const pool = new Pool({
 // Stockage temporaire des commandes PayPal en attente
 const pendingPaypalOrders = new Map();
 
+// Codes promo : { CODE: pourcentage_reduction }
+const PROMO_CODES = {
+  // Ajouter les codes ici au fur et à mesure
+  // Exemple: 'SEDEF40': 40
+};
+
 const R2_BASE_URL = process.env.R2_BASE_URL || 'https://pub-7f197ac13eac4cfdb1c383886c9b0100.r2.dev';
 
 // Mapping slug -> nom du fichier sur R2
@@ -327,15 +333,26 @@ app.get('/admin/users', requireAdmin, async (req, res) => {
 });
 
 
+// ── CODES PROMO ───────────────────────────────────────────────────────────────
+app.post('/api/promo/validate', (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'Code manquant.' });
+  const discount = PROMO_CODES[code.toUpperCase().trim()];
+  if (discount === undefined) return res.status(404).json({ error: 'Code promo invalide.' });
+  res.json({ code: code.toUpperCase().trim(), discount });
+});
+
 // ── STRIPE ELEMENTS ───────────────────────────────────────────────────────────
 app.post('/api/checkout/stripe/intent', async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'Stripe non configuré.' });
-  const { items, userEmail } = req.body;
+  const { items, userEmail, promoDiscount } = req.body;
   if (!items || !items.length) return res.status(400).json({ error: 'Panier vide.' });
 
-  const amount = items.reduce((sum, item) => {
+  const rawAmount = items.reduce((sum, item) => {
     return sum + Math.round(parseFloat(item.price.replace(',', '.').replace(/[^0-9.]/g, '')) * 100) * item.quantity;
   }, 0);
+  const discount = (promoDiscount && promoDiscount > 0 && promoDiscount <= 100) ? promoDiscount : 0;
+  const amount = Math.round(rawAmount * (1 - discount / 100));
 
   try {
     const paymentIntent = await stripe.paymentIntents.create({
@@ -378,12 +395,14 @@ app.post('/api/checkout/stripe/after-payment', async (req, res) => {
 // ── STRIPE SEPA DIRECT DEBIT ──────────────────────────────────────────────────
 app.post('/api/checkout/stripe/sepa-intent', async (req, res) => {
   if (!stripe) return res.status(503).json({ error: 'Stripe non configuré.' });
-  const { items, userEmail } = req.body;
+  const { items, userEmail, promoDiscount } = req.body;
   if (!items || !items.length) return res.status(400).json({ error: 'Panier vide.' });
 
-  const amount = items.reduce((sum, item) => {
+  const rawAmount = items.reduce((sum, item) => {
     return sum + Math.round(parseFloat(item.price.replace(',', '.').replace(/[^0-9.]/g, '')) * 100) * item.quantity;
   }, 0);
+  const discount = (promoDiscount && promoDiscount > 0 && promoDiscount <= 100) ? promoDiscount : 0;
+  const amount = Math.round(rawAmount * (1 - discount / 100));
 
   try {
     const paymentIntent = await stripe.paymentIntents.create({
@@ -476,12 +495,14 @@ async function getPaypalToken() {
 
 app.post('/api/checkout/paypal', async (req, res) => {
   if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) return res.status(503).json({ error: 'PayPal non configuré.' });
-  const { items, userEmail } = req.body;
+  const { items, userEmail, promoDiscount } = req.body;
   if (!items || !items.length) return res.status(400).json({ error: 'Panier vide.' });
 
-  const total = items.reduce((sum, item) => {
+  const rawTotal = items.reduce((sum, item) => {
     return sum + parseFloat(item.price.replace(',', '.').replace(/[^0-9.]/g, '')) * item.quantity;
-  }, 0).toFixed(2);
+  }, 0);
+  const discount = (promoDiscount && promoDiscount > 0 && promoDiscount <= 100) ? promoDiscount : 0;
+  const total = (rawTotal * (1 - discount / 100)).toFixed(2);
 
   try {
     const token = await getPaypalToken();

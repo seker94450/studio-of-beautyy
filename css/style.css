@@ -365,6 +365,115 @@ main { padding-top: var(--header-h); }
   border-radius: 16px;
   font-size: 1rem;
 }
+.promo-original {
+  text-decoration: line-through;
+  opacity: 0.45;
+  margin-right: 0.5rem;
+  font-size: 0.9em;
+}
+.promo-code-section {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+.promo-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.7;
+  font-family: var(--font-sans);
+  white-space: nowrap;
+}
+.promo-input {
+  border: 1px solid rgba(42,40,38,0.18);
+  border-radius: 10px;
+  padding: 0.55rem 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  background: #fff;
+  outline: none;
+  width: 160px;
+  transition: border 0.2s;
+}
+.promo-input:focus { border-color: rgba(42,40,38,0.5); }
+.promo-apply-btn {
+  background: #2a2826;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.55rem 1.2rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.promo-apply-btn:hover { opacity: 0.8; }
+.promo-apply-btn:disabled { opacity: 0.4; cursor: default; }
+.promo-message {
+  font-size: 0.82rem;
+  margin-top: 0.4rem;
+  font-family: var(--font-sans);
+  min-height: 1.2em;
+}
+.promo-success { color: #2a7a3b; }
+.promo-error { color: var(--danger); }
+
+#account-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  animation: toastIn 0.3s ease;
+}
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.account-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: #2a2826;
+  color: #fafaf8;
+  padding: 1rem 1.4rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+  font-family: var(--font-sans);
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+.account-toast-msg { opacity: 0.88; }
+.account-toast-btn {
+  background: #fafaf8;
+  color: #2a2826;
+  border: none;
+  border-radius: 10px;
+  padding: 0.45rem 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.account-toast-btn:hover { opacity: 0.8; }
+.account-toast-close {
+  background: transparent;
+  border: none;
+  color: #fafaf8;
+  font-size: 1.3rem;
+  cursor: pointer;
+  opacity: 0.6;
+  line-height: 1;
+  padding: 0;
+}
+.account-toast-close:hover { opacity: 1; }
 
 .products-section { padding: 4rem 2rem 2rem; background: var(--white); }
 .section-label {

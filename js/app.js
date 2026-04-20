@@ -143,10 +143,25 @@ function isLoggedIn() {
 }
 
 // ── AJOUTER AU PANIER ─────────────────────────────────────────────────────────
+function showAccountRequiredToast() {
+  const existing = document.getElementById('account-toast');
+  if (existing) existing.remove();
+  const toast = document.createElement('div');
+  toast.id = 'account-toast';
+  toast.innerHTML = `
+    <div class="account-toast-content">
+      <div class="account-toast-msg">Créez un compte pour ajouter un produit au panier.</div>
+      <a href="signup.html" class="account-toast-btn">Créer un compte</a>
+      <button class="account-toast-close" onclick="this.closest('#account-toast').remove()">×</button>
+    </div>
+  `;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 6000);
+}
+
 function addToCart(slug) {
   if (!isLoggedIn()) {
-    alert('Vous devez créer un compte pour ajouter un produit au panier.');
-    location.href = 'signup.html';
+    showAccountRequiredToast();
     return;
   }
   const product = PRODUCTS[slug];
@@ -164,8 +179,7 @@ function addToCart(slug) {
 
 function buyNow(slug) {
   if (!isLoggedIn()) {
-    alert('Vous devez créer un compte pour ajouter un produit au panier.');
-    location.href = 'signup.html';
+    showAccountRequiredToast();
     return;
   }
   const product = PRODUCTS[slug];
@@ -242,8 +256,14 @@ function buildCartPage() {
       </div>
       <div class="cart-summary">
         <div>Total</div>
-        <div>${total.toFixed(2).replace('.', ',')} €</div>
+        <div id="cart-total-display">${total.toFixed(2).replace('.', ',')} €</div>
       </div>
+      <div class="promo-code-section">
+        <span class="promo-label">CODE PROMO</span>
+        <input type="text" id="promo-input" class="promo-input" placeholder="Entrez votre code">
+        <button class="promo-apply-btn" type="button" onclick="applyPromoCode()">Appliquer</button>
+      </div>
+      <div id="promo-message" class="promo-message"></div>
       <div class="cart-checkout-buttons">
         <button class="btn-checkout btn-checkout-card" type="button" onclick="checkoutStripe()">
           <div class="btn-checkout-inner">
@@ -280,12 +300,45 @@ function buildCartPage() {
   });
 }
 
+let appliedPromo = null;
+
+async function applyPromoCode() {
+  const input = document.getElementById('promo-input');
+  const msg = document.getElementById('promo-message');
+  const code = input.value.trim();
+  if (!code) return;
+
+  try {
+    const data = await apiPost('/api/promo/validate', { code });
+    appliedPromo = { code: data.code, discount: data.discount };
+    const cart = getCart();
+    const total = cart.reduce((sum, item) => sum + parseFloat(formatPrice(item.price)) * item.quantity, 0);
+    const discounted = total * (1 - data.discount / 100);
+    document.getElementById('cart-total-display').innerHTML =
+      `<span class="promo-original">${total.toFixed(2).replace('.', ',')} €</span> ${discounted.toFixed(2).replace('.', ',')} €`;
+    msg.className = 'promo-message promo-success';
+    msg.textContent = `Code "${data.code}" appliqué — ${data.discount}% de réduction !`;
+    input.disabled = true;
+    document.querySelector('.promo-apply-btn').disabled = true;
+  } catch (err) {
+    appliedPromo = null;
+    msg.className = 'promo-message promo-error';
+    msg.textContent = 'Code promo invalide.';
+  }
+}
+
+function getPromoDiscount() {
+  return appliedPromo ? appliedPromo.discount : 0;
+}
+
 async function checkoutStripe() {
   const cart = getCart();
   if (!cart.length) return;
   const user = getCurrentUser();
 
-  const total = cart.reduce((sum, i) => sum + parseFloat(formatPrice(i.price)) * i.quantity, 0);
+  const rawTotal = cart.reduce((sum, i) => sum + parseFloat(formatPrice(i.price)) * i.quantity, 0);
+  const discount = getPromoDiscount();
+  const total = rawTotal * (1 - discount / 100);
   const totalStr = total.toFixed(2).replace('.', ',') + ' €';
 
   // Modale paiement
@@ -310,7 +363,7 @@ async function checkoutStripe() {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 
   try {
-    const data = await apiPost('/api/checkout/stripe/intent', { items: cart, userEmail: user?.email || '' });
+    const data = await apiPost('/api/checkout/stripe/intent', { items: cart, userEmail: user?.email || '', promoDiscount: discount });
     const stripe = Stripe(data.publishableKey);
     const elements = stripe.elements();
     const card = elements.create('card', {
@@ -363,7 +416,9 @@ async function checkoutSepa() {
   if (!cart.length) return;
   const user = getCurrentUser();
 
-  const total = cart.reduce((sum, i) => sum + parseFloat(formatPrice(i.price)) * i.quantity, 0);
+  const rawTotal = cart.reduce((sum, i) => sum + parseFloat(formatPrice(i.price)) * i.quantity, 0);
+  const discount = getPromoDiscount();
+  const total = rawTotal * (1 - discount / 100);
   const totalStr = total.toFixed(2).replace('.', ',') + ' €';
 
   const overlay = document.createElement('div');
@@ -403,7 +458,7 @@ async function checkoutSepa() {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 
   try {
-    const data = await apiPost('/api/checkout/stripe/sepa-intent', { items: cart, userEmail: user?.email || '' });
+    const data = await apiPost('/api/checkout/stripe/sepa-intent', { items: cart, userEmail: user?.email || '', promoDiscount: discount });
     const stripe = Stripe(data.publishableKey);
     const elements = stripe.elements();
     const iban = elements.create('iban', {
@@ -473,8 +528,9 @@ async function checkoutPaypal() {
   const cart = getCart();
   if (!cart.length) return;
   const user = getCurrentUser();
+  const discount = getPromoDiscount();
   try {
-    const data = await apiPost('/api/checkout/paypal', { items: cart, userEmail: user?.email || '' });
+    const data = await apiPost('/api/checkout/paypal', { items: cart, userEmail: user?.email || '', promoDiscount: discount });
     window.location.href = data.url;
   } catch (err) {
     alert(err.message);
