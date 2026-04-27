@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="48" fill="#1a1714"/>
+  <circle cx="50" cy="50" r="42" fill="none" stroke="#c4a882" stroke-width="1"/>
+  <circle cx="50" cy="50" r="36" fill="none" stroke="#c4a882" stroke-width="0.4" opacity="0.6"/>
+  <circle cx="50" cy="8" r="2" fill="#c4a882"/>
+  <circle cx="50" cy="92" r="2" fill="#c4a882"/>
+  <circle cx="8" cy="50" r="2" fill="#c4a882"/>
+  <circle cx="92" cy="50" r="2" fill="#c4a882"/>
+  <text x="50" y="46" font-family="Georgia, serif" font-size="10" font-style="italic" fill="#c4a882" text-anchor="middle" letter-spacing="1.5">Studio of</text>
+  <line x1="20" y1="52" x2="80" y2="52" stroke="#c4a882" stroke-width="0.5" opacity="0.7"/>
+  <text x="50" y="67" font-family="Georgia, serif" font-size="16" fill="#c4a882" text-anchor="middle" letter-spacing="3">BEAUTY</text>
+</svg>
